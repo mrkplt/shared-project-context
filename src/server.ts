@@ -3,15 +3,14 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
-import { ProjectManager } from './project/ProjectManager.js';
-import { ValidationEngine } from './validation/ValidationEngine.js';
-import { ContextMCPServer } from './mcp/ContextMCPServer.js';
-import path from 'path';
-import os from 'os';
-import { fileURLToPath } from 'url';
+import { ProjectManager } from './project/ProjectManager';
+import { ValidationEngine } from './validation/ValidationEngine';
+import { ContextMCPServer } from './mcp/ContextMCPServer';
+import * as path from 'path';
+import * as os from 'os';
 
-// Get the directory name in ES module
-const __filename = fileURLToPath(import.meta.url);
+// Get the directory name in CommonJS
+const __filename = require.main?.filename || process.argv[1];
 const __dirname = path.dirname(__filename);
 
 // Default context root directory
@@ -92,10 +91,10 @@ class ContextManagerServer {
       try {
         switch (name) {
           case 'get_context':
-            return await this.contextMCPServer.handleGetContext(args);
+            return await this.contextMCPServer.handleGetContext(args as { project_id: string; file_type: string });
             
           case 'update_context':
-            return await this.contextMCPServer.handleUpdateContext(args);
+            return await this.contextMCPServer.handleUpdateContext(args as { project_id: string; file_type: string; content: string });
             
           default:
             throw new Error(`Unknown tool: ${name}`);
@@ -117,7 +116,7 @@ class ContextManagerServer {
   }
 }
 // Start the server when this file is run directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (require.main === module) {
   const server = new ContextManagerServer();
   server.start().catch(error => {
     console.error('Failed to start server:', error);

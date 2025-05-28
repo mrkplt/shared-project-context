@@ -25,14 +25,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/36</span>
+                <span class='fraction'>0/35</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/6</span>
+                <span class='fraction'>0/8</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/35</span>
+                <span class='fraction'>0/34</span>
             </div>
         
             
@@ -190,10 +190,8 @@
 <a name='L125'></a><a href='#L125'>125</a>
 <a name='L126'></a><a href='#L126'>126</a>
 <a name='L127'></a><a href='#L127'>127</a>
-<a name='L128'></a><a href='#L128'>128</a>
-<a name='L129'></a><a href='#L129'>129</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L128'></a><a href='#L128'>128</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -324,15 +322,14 @@
 <span class="cstat-no" title="statement not covered" >import { Server } from '@modelcontextprotocol/sdk/server/index.js';</span>
 <span class="cstat-no" title="statement not covered" >import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';</span>
 <span class="cstat-no" title="statement not covered" >import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';</span>
-<span class="cstat-no" title="statement not covered" >import { ProjectManager } from './project/ProjectManager.js';</span>
-<span class="cstat-no" title="statement not covered" >import { ValidationEngine } from './validation/ValidationEngine.js';</span>
-<span class="cstat-no" title="statement not covered" >import { ContextMCPServer } from './mcp/ContextMCPServer.js';</span>
-<span class="cstat-no" title="statement not covered" >import path from 'path';</span>
-<span class="cstat-no" title="statement not covered" >import os from 'os';</span>
-<span class="cstat-no" title="statement not covered" >import { fileURLToPath } from 'url';</span>
+<span class="cstat-no" title="statement not covered" >import { ProjectManager } from './project/ProjectManager';</span>
+<span class="cstat-no" title="statement not covered" >import { ValidationEngine } from './validation/ValidationEngine';</span>
+<span class="cstat-no" title="statement not covered" >import { ContextMCPServer } from './mcp/ContextMCPServer';</span>
+<span class="cstat-no" title="statement not covered" >import * as path from 'path';</span>
+<span class="cstat-no" title="statement not covered" >import * as os from 'os';</span>
 &nbsp;
-// Get the directory name in ES module
-const __filename = <span class="cstat-no" title="statement not covered" >fileURLToPath(import.meta.url);</span>
+// Get the directory name in CommonJS
+const __filename = <span class="cstat-no" title="statement not covered" >require.main?.filename || process.argv[1];</span>
 const __dirname = <span class="cstat-no" title="statement not covered" >path.dirname(__filename);</span>
 &nbsp;
 // Default context root directory
@@ -413,10 +410,10 @@ class ContextManagerServer {
 <span class="cstat-no" title="statement not covered" >      try {</span>
 <span class="cstat-no" title="statement not covered" >        switch (name) {</span>
           case 'get_context':
-<span class="cstat-no" title="statement not covered" >            return await this.contextMCPServer.handleGetContext(args);</span>
+<span class="cstat-no" title="statement not covered" >            return await this.contextMCPServer.handleGetContext(args as { project_id: string; file_type: string });</span>
             
           case 'update_context':
-<span class="cstat-no" title="statement not covered" >            return await this.contextMCPServer.handleUpdateContext(args);</span>
+<span class="cstat-no" title="statement not covered" >            return await this.contextMCPServer.handleUpdateContext(args as { project_id: string; file_type: string; content: string });</span>
             
           default:
 <span class="cstat-no" title="statement not covered" >            throw new Error(`Unknown tool: ${name}`);</span>
@@ -438,7 +435,7 @@ class ContextManagerServer {
   }
 }
 // Start the server when this file is run directly
-<span class="cstat-no" title="statement not covered" ><span class="missing-if-branch" title="if path not taken" >I</span>if (import.meta.url === `file://${process.argv[1]}`) {</span>
+<span class="cstat-no" title="statement not covered" ><span class="missing-if-branch" title="if path not taken" >I</span>if (require.main === module) {</span>
   const server = <span class="cstat-no" title="statement not covered" >new ContextManagerServer();</span>
 <span class="cstat-no" title="statement not covered" >  server.start().catch(<span class="fstat-no" title="function not covered" >error </span>=&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    console.error('Failed to start server:', error);</span>
@@ -454,7 +451,7 @@ export { <span class="cstat-no" title="statement not covered" >ContextManagerSer
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-05-28T03:15:09.492Z
+                at 2025-05-28T03:21:45.984Z
             </div>
         <script src="../prettify.js"></script>
         <script>

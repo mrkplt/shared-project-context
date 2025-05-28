@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">83.33% </span>
+                <span class="strong">66.66% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>25/30</span>
-            </div>
-        
-            
-            <div class='fl pad1y space-right2'>
-                <span class="strong">50% </span>
-                <span class="quiet">Branches</span>
-                <span class='fraction'>2/4</span>
+                <span class='fraction'>20/30</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">75% </span>
-                <span class="quiet">Functions</span>
-                <span class='fraction'>6/8</span>
+                <span class="quiet">Branches</span>
+                <span class='fraction'>3/4</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">83.33% </span>
+                <span class="quiet">Functions</span>
+                <span class='fraction'>5/6</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">66.66% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>25/30</span>
+                <span class='fraction'>20/30</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line high'></div>
+    <div class='status-line medium'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -200,9 +200,9 @@
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -254,14 +254,14 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -304,9 +304,9 @@ export class ContextMCPServer {
     try {
       const filePath = this.projectManager.getContextFilePath(args.project_id, args.file_type);
       const content = await this.readFile(filePath);
-      return { success: true, content };
+<span class="cstat-no" title="statement not covered" >      return { success: true, content };</span>
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : <span class="branch-1 cbranch-no" title="branch not covered" >String(error) </span>};
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
     }
   }
 &nbsp;
@@ -359,18 +359,18 @@ export class ContextMCPServer {
 &nbsp;
   private async readFile(filePath: string): Promise&lt;string&gt; {
     const fs = await import('fs/promises');
-    try {
-      return await fs.readFile(filePath, 'utf-8');
+<span class="cstat-no" title="statement not covered" >    try {</span>
+<span class="cstat-no" title="statement not covered" >      return await fs.readFile(filePath, 'utf-8');</span>
     } catch (error) {
-      <span class="missing-if-branch" title="if path not taken" >I</span>if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+<span class="cstat-no" title="statement not covered" >      <span class="missing-if-branch" title="if path not taken" >I</span>if ((error as NodeJS.ErrnoException).code === 'ENOENT') {</span>
 <span class="cstat-no" title="statement not covered" >        throw new Error('File not found');</span>
       }
-      throw error;
+<span class="cstat-no" title="statement not covered" >      throw error;</span>
     }
   }
 &nbsp;
   private <span class="fstat-no" title="function not covered" >async </span>writeFile(filePath: string, content: string): Promise&lt;void&gt; {
-    const fs = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >await import('</span>fs/promises');</span>
+    const fs = <span class="cstat-no" title="statement not covered" >await import('fs/promises');</span>
 <span class="cstat-no" title="statement not covered" >    await fs.mkdir(path.dirname(filePath), { recursive: true });</span>
 <span class="cstat-no" title="statement not covered" >    await fs.writeFile(filePath, content, 'utf-8');</span>
   }
@@ -382,7 +382,7 @@ export class ContextMCPServer {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-05-28T03:15:09.492Z
+                at 2025-05-28T03:21:45.984Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
