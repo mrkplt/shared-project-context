@@ -34,9 +34,9 @@ export class ContextMCPServer {
         const fs = await import('fs/promises');
         return fs.writeFile(p, content, 'utf-8');
       }),
-      mkdir: fileSystem?.mkdir || (async (p, options) => {
+      mkdir: fileSystem?.mkdir || (async (p: string, options: { recursive: boolean }) => {
         const fs = await import('fs/promises');
-        return fs.mkdir(p, options);
+        return fs.mkdir(p, options) as Promise<void>; // Type assertion
       })
     };
     
