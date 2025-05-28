@@ -8,13 +8,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Initial project setup with TypeScript and Express
-- Basic MCP server implementation
-- Validation module with schema validation
-- Test infrastructure with Jest
+- MCP Server implementation with stdio transport
+- Project management system with isolated contexts
+- Template system for structured context validation
+- Sequential reasoning engine for context updates
+- File system abstraction layer
+- Comprehensive error handling system
+- Configuration management
+- Logging infrastructure
+- Testing utilities
+- Documentation generation
+- Build system with TypeScript support
+
+### Changed
+- Refactored context management to use MCP protocol
+- Updated validation system to support template-based validation
+- Improved error handling with structured error types
+- Enhanced project configuration system
+- Streamlined build and test processes
 
 ### Fixed
 - Fixed import path in validation.test.ts from '../validation' to './validation' (BUG-001)
+- Fixed TypeScript type mismatch in ContextMCPServer's mkdir implementation (BUG-002)
+- Resolved file system operation race conditions
+- Fixed template validation edge cases
+- Addressed security vulnerabilities in dependencies
+
+### Removed
+- Deprecated legacy context management code
+- Removed unused dependencies
+- Cleaned up obsolete configuration options
+
+### Security
+- Implemented file system sandboxing
+- Added input validation for all external inputs
+- Secured MCP server communication
+- Added rate limiting for API endpoints
+- Implemented proper error handling to prevent information leakage
 
 ## [0.1.0] - 2025-05-26
 

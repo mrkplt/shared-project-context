@@ -1,54 +1,126 @@
 # Features
-<!-- Last Updated: 2025-05-26 -->
+<!-- Last Updated: 2025-05-28 -->
 
-## Feature: Context Management
+## Feature: MCP Server Implementation
 - **Status**: ✅ Active
 - **Confidence**: High
-- **Last Verified**: 2025-05-26
+- **Last Verified**: 2025-05-28
 - **Description**:
-  Provides functionality to store and retrieve context files for different projects, allowing AI agents to maintain and access persistent context across sessions.
+  Implements the Model Context Protocol (MCP) server for agent communication, providing a standardized way to manage and access project context.
 
 ### Implementation
-- **Components**: [Server, Validation, Storage]
-- **Entry Points**: [server.ts:MCPServer, validation.ts:validateContent]
-- **Dependencies**: [Express, AJV, TypeScript]
+- **Components**: [MCPServer, Transport, Tool Handlers]
+- **Entry Points**: [src/mcp/ContextMCPServer.ts]
+- **Dependencies**: [@modelcontextprotocol/sdk, TypeScript]
 
 ### Usage
 ```typescript
-// Example: Getting context for a project
-const context = await server.getContext('project-123', 'mental_model');
+// Initialize MCP Server
+const mcpServer = new ContextMCPServer();
 
-// Example: Updating context
-await server.updateContext('project-123', 'mental_model', newContent);
+// Start listening for agent connections
+mcpServer.start();
 ```
 
 ### Related
-- **Bugs**: [BUG-001]
-- **Files**: [src/server.ts, src/validation.ts, src/types.ts]
+- **Bugs**: [BUG-002]
+- **Files**: [src/mcp/ContextMCPServer.ts, src/project/ProjectManager.ts]
 
 ### Notes
-- [ ] Add persistent storage
+- [x] Implement basic MCP server
+- [x] Add stdio transport
+- [ ] Add WebSocket transport
 - [ ] Implement authentication
-- [ ] Add rate limiting
 
 ---
 
-## Feature: Schema Validation
+## Feature: Project Management
 - **Status**: ✅ Active
 - **Confidence**: High
-- **Last Verified**: 2025-05-26
+- **Last Verified**: 2025-05-28
 - **Description**:
-  Validates context content against predefined JSON schemas to ensure data consistency and structure compliance.
+  Manages project configurations, context files, and templates, providing isolation between different projects.
 
 ### Implementation
-- **Components**: [Validation, Schemas]
-- **Entry Points**: [validation.ts:validateContent]
-- **Dependencies**: [AJV, JSON Schema]
+- **Components**: [ProjectManager, FileSystem, Templates]
+- **Entry Points**: [src/project/ProjectManager.ts]
+- **Dependencies**: [fs-extra, path]
 
 ### Usage
 ```typescript
-const result = validateContent(content, schema);
-if (!result.isValid) {
+const projectManager = new ProjectManager();
+const projectId = await projectManager.initProject('/path/to/project');
+const contextPath = projectManager.getContextFilePath(projectId, 'mental_model');
+```
+
+### Related
+- **Bugs**: []
+- **Files**: [src/project/ProjectManager.ts, src/types/project.ts]
+
+---
+
+## Feature: Template System
+- **Status**: ✅ Active
+- **Confidence**: Medium
+- **Last Verified**: 2025-05-28
+- **Description**:
+  Defines and validates context file structures using JSON schemas and templates, ensuring consistency across projects.
+
+### Implementation
+- **Components**: [Templates, Schema Validator, Formatters]
+- **Entry Points**: [src/validation/validator.ts]
+- **Dependencies**: [AJV, json-schema-to-typescript]
+
+### Usage
+```typescript
+const template = {
+  name: 'mental_model',
+  schema: {
+    required_sections: ['overview', 'key_concepts', 'relationships'],
+    section_schemas: {
+      overview: {
+        required: true,
+        format: 'markdown',
+        min_length: 100
+      }
+    }
+  }
+};
+
+const result = validateAgainstTemplate(content, template);
+```
+
+### Related
+- **Bugs**: []
+- **Files**: [src/validation/templates/*.json, src/validation/validator.ts]
+
+---
+
+## Feature: Sequential Reasoning Engine
+- **Status**: 🚧 In Development
+- **Confidence**: Medium
+- **Last Verified**: 2025-05-28
+- **Description**:
+  Processes context updates through a series of validation and reasoning steps, providing structured feedback and suggestions.
+
+### Implementation
+- **Components**: [ReasoningEngine, ValidationPipeline, CorrectionGenerator]
+- **Entry Points**: [src/reasoning/SequentialReasoningEngine.ts]
+- **Dependencies**: [openai, langchain]
+
+### Usage
+```typescript
+const reasoningEngine = new SequentialReasoningEngine();
+const result = await reasoningEngine.processUpdate(
+  projectId,
+  'mental_model',
+  newContent
+);
+```
+
+### Related
+- **Bugs**: []
+- **Files**: [src/reasoning/SequentialReasoningEngine.ts]
   console.error('Validation errors:', result.errors);
 }
 ```
