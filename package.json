@@ -3,11 +3,13 @@
   "version": "0.1.0",
   "description": "MCP Server for managing AI agent context with validation and correction guidance",
   "main": "dist/index.js",
-  "type": "module",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
-    "start": "node dist/index.js",
-    "dev": "tsx watch --clear-screen=false src/index.ts",
+    "start": "node dist/server.js",
+    "dev": "tsx watch --clear-screen=false src/server.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
@@ -32,7 +34,7 @@
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
-    "@types/jest": "^29.5.12",
+    "@types/jest": "^29.5.14",
     "@types/node": "^20.11.30",
     "@typescript-eslint/eslint-plugin": "^7.1.1",
     "@typescript-eslint/parser": "^7.1.1",
