@@ -1,19 +1,14 @@
-// Define mocks first
+// Define mocks for file system operations
 const mockReadFile = jest.fn();
 const mockWriteFile = jest.fn();
+const mockMkdir = jest.fn();
 
-// Mock the file system
-jest.mock('fs/promises', () => ({
+// Create a mock file system implementation
+const mockFileSystem = {
   readFile: mockReadFile,
   writeFile: mockWriteFile,
-  access: jest.fn(),
-  constants: {
-    F_OK: 0,
-    R_OK: 4,
-    W_OK: 2,
-    X_OK: 1,
-  },
-}));
+  mkdir: mockMkdir
+};
 
 import { ContextMCPServer } from '../../mcp/ContextMCPServer';
 import { ProjectManager } from '../../project/ProjectManager';
@@ -42,7 +37,17 @@ describe('ContextMCPServer', () => {
       })
     } as unknown as jest.Mocked<ValidationEngine>;
     
-    server = new ContextMCPServer(mockProjectManager, mockValidationEngine);
+    // Reset all file system mocks
+    mockReadFile.mockClear();
+    mockWriteFile.mockClear();
+    mockMkdir.mockClear();
+    
+    // Create server with mock file system
+    server = new ContextMCPServer(
+      mockProjectManager, 
+      mockValidationEngine,
+      mockFileSystem
+    );
   });
 
   describe('get_context tool', () => {
@@ -68,12 +73,7 @@ describe('ContextMCPServer', () => {
       
       // Setup mocks
       mockProjectManager.getContextFilePath.mockReturnValue(filePath);
-      mockReadFile.mockImplementation((path) => {
-        if (path === filePath) {
-          return Promise.resolve(testContent);
-        }
-        return Promise.reject(new Error('File not found'));
-      });
+      mockReadFile.mockResolvedValue(testContent);
 
       // Call the method
       const result = await server.handleGetContext({
@@ -96,7 +96,9 @@ describe('ContextMCPServer', () => {
       
       // Setup mocks
       mockProjectManager.getContextFilePath.mockReturnValue(filePath);
-      mockReadFile.mockRejectedValue(new Error('File not found'));
+      const error = new Error('File not found');
+      (error as NodeJS.ErrnoException).code = 'ENOENT';
+      mockReadFile.mockRejectedValue(error);
 
       // Call the method
       const result = await server.handleGetContext({

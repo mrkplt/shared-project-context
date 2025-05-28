@@ -3,14 +3,43 @@ import * as path from 'path';
 import { ProjectManager } from '../project/ProjectManager';
 import { ValidationEngine } from '../validation/ValidationEngine';
 
+// Define file system interface for better testability
+interface FileSystem {
+  readFile: (path: string, encoding: BufferEncoding) => Promise<string>;
+  writeFile: (path: string, content: string) => Promise<void>;
+  mkdir: (path: string, options: { recursive: boolean }) => Promise<void>;
+}
+
 export class ContextMCPServer {
   private server: Server;
   private projectManager: ProjectManager;
   private validationEngine: ValidationEngine;
+  private fs: FileSystem;
 
-  constructor(projectManager: ProjectManager, validationEngine: ValidationEngine) {
+  constructor(
+    projectManager: ProjectManager, 
+    validationEngine: ValidationEngine,
+    fileSystem?: Partial<FileSystem>
+  ) {
     this.projectManager = projectManager;
     this.validationEngine = validationEngine;
+    
+    // Use provided file system or default to Node's fs/promises
+    this.fs = {
+      readFile: fileSystem?.readFile || (async (p, enc) => {
+        const fs = await import('fs/promises');
+        return fs.readFile(p, enc);
+      }),
+      writeFile: fileSystem?.writeFile || (async (p, content) => {
+        const fs = await import('fs/promises');
+        return fs.writeFile(p, content, 'utf-8');
+      }),
+      mkdir: fileSystem?.mkdir || (async (p, options) => {
+        const fs = await import('fs/promises');
+        return fs.mkdir(p, options);
+      })
+    };
+    
     this.server = new Server({
       name: 'context-manager',
       version: '1.0.0'
@@ -85,9 +114,8 @@ export class ContextMCPServer {
   }
 
   private async readFile(filePath: string): Promise<string> {
-    const fs = await import('fs/promises');
     try {
-      return await fs.readFile(filePath, 'utf-8');
+      return await this.fs.readFile(filePath, 'utf-8');
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         throw new Error('File not found');
@@ -97,8 +125,7 @@ export class ContextMCPServer {
   }
 
   private async writeFile(filePath: string, content: string): Promise<void> {
-    const fs = await import('fs/promises');
-    await fs.mkdir(path.dirname(filePath), { recursive: true });
-    await fs.writeFile(filePath, content, 'utf-8');
+    await this.fs.mkdir(path.dirname(filePath), { recursive: true });
+    await this.fs.writeFile(filePath, content);
   }
 }

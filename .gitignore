@@ -16,7 +16,7 @@ Icon
 Network Trash Folder
 Temporary Items
 .apdisk
-
+coverage/
 # Python
 __pycache__/
 *.py[cod]
