@@ -86,19 +86,6 @@ export class ContextMCPServer {
     };
   }> {
     try {
-      // In a real implementation, we would load the appropriate template here
-      const template = {
-        name: 'Default Template',
-        description: 'Default validation template',
-        schema: {
-          required_sections: [],
-          section_schemas: {},
-          format_rules: []
-        },
-        correction_prompts: {},
-        examples: []
-      };
-
       const filePath = this.projectManager.getContextFilePath(args.project_id, args.file_type);
       await this.writeFile(filePath, args.content);
       
@@ -120,7 +107,7 @@ export class ContextMCPServer {
   }
 
   private async writeFile(filePath: string, content: string): Promise<void> {
-    await this.fs.mkdir(path.dirname(filePath), { recursive: true });
+    await this.projectManager.initProject(filePath);
     await this.fs.writeFile(filePath, content);
   }
 }
