@@ -79,7 +79,7 @@ class ContextManagerServer {
         }
       ]
     }));
-    
+  
     // Handle tool execution
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
@@ -90,7 +90,9 @@ class ContextManagerServer {
             return await this.contextMCPServer.handleGetContext(args as { project_id: string; file_type: string });
             
           case 'update_context':
-            return await this.contextMCPServer.handleUpdateContext(args as { project_id: string; file_type: string; content: string });
+            return await this.contextMCPServer.handleUpdateContext(
+              args as { project_id: string; file_type: string; content: string }
+            );
             
           default:
             throw new Error(`Unknown tool: ${name}`);
@@ -103,7 +105,6 @@ class ContextManagerServer {
       }
     });
   }
-  
   // Start the server
   public async start(): Promise<void> {
     const transport = new StdioServerTransport();
