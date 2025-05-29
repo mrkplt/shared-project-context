@@ -73,6 +73,7 @@ export class ContextMCPServer {
     content: string;
   }): Promise<{
     success: boolean;
+    error?: string;
     validation?: {
       valid: boolean;
       errors: Array<{
@@ -86,12 +87,29 @@ export class ContextMCPServer {
     };
   }> {
     try {
+      console.log(`[DEBUG] handleUpdateContext - project_id: ${args.project_id}, file_type: ${args.file_type}`);
+      
+      // First initialize the project if it doesn't exist
+      const contextRoot = this.projectManager.getContextRoot();
+      const projectDir = path.join(contextRoot, 'projects', args.project_id);
+      
+      console.log(`[DEBUG] Initializing project in directory: ${projectDir}`);
+      await this.projectManager.initProject(projectDir);
+      
+      // Now get the file path
       const filePath = this.projectManager.getContextFilePath(args.project_id, args.file_type);
+      console.log(`[DEBUG] handleUpdateContext - filePath: ${filePath}`);
+      
       await this.writeFile(filePath, args.content);
       
       return { success: true };
     } catch (error) {
-      return { success: false };
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`[ERROR] handleUpdateContext failed:`, error);
+      return { 
+        success: false, 
+        error: errorMessage 
+      };
     }
   }
 
@@ -107,7 +125,19 @@ export class ContextMCPServer {
   }
 
   private async writeFile(filePath: string, content: string): Promise<void> {
-    await this.projectManager.initProject(filePath);
-    await this.fs.writeFile(filePath, content);
+    console.log(`[DEBUG] writeFile called with path: ${filePath}`);
+    // Extract the project directory from the full file path
+    const projectDir = path.dirname(filePath);
+    console.log(`[DEBUG] Project directory: ${projectDir}`);
+    
+    try {
+      await this.projectManager.initProject(projectDir);
+      console.log(`[DEBUG] Project initialized, writing to: ${filePath}`);
+      await this.fs.writeFile(filePath, content);
+      console.log(`[DEBUG] Successfully wrote to file: ${filePath}`);
+    } catch (error) {
+      console.error(`[ERROR] Failed to write file ${filePath}:`, error);
+      throw error;
+    }
   }
 }
