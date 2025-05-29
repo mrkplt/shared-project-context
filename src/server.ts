@@ -4,7 +4,6 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { ProjectManager } from './project/ProjectManager';
-import { ValidationEngine } from './validation/ValidationEngine';
 import { ContextMCPServer } from './mcp/ContextMCPServer';
 import * as path from 'path';
 import * as os from 'os';
@@ -17,13 +16,11 @@ class ContextManagerServer {
   private server: Server;
   private contextMCPServer: ContextMCPServer;
   private projectManager: ProjectManager;
-  private validationEngine: ValidationEngine;
 
   constructor() {
     // Initialize components
     this.projectManager = new ProjectManager(DEFAULT_CONTEXT_ROOT);
-    this.validationEngine = new ValidationEngine();
-    this.contextMCPServer = new ContextMCPServer(this.projectManager, this.validationEngine);
+    this.contextMCPServer = new ContextMCPServer(this.projectManager);
     
     // Initialize MCP server with proper configuration
     this.server = new Server(

@@ -1,7 +1,5 @@
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import * as path from 'path';
 import { ProjectManager } from '../project/ProjectManager';
-import { ValidationEngine } from '../validation/ValidationEngine';
 
 // Define file system interface for better testability
 interface FileSystem {
@@ -12,30 +10,42 @@ interface FileSystem {
 
 export class ContextMCPServer {
   private projectManager: ProjectManager;
-  private validationEngine: ValidationEngine;
   private fs: FileSystem;
 
   constructor(
     projectManager: ProjectManager, 
-    validationEngine: ValidationEngine,
     fileSystem?: Partial<FileSystem>
   ) {
     this.projectManager = projectManager;
-    this.validationEngine = validationEngine;
     
     // Use provided file system or default to Node's fs/promises
     this.fs = {
       readFile: fileSystem?.readFile || (async (p, enc) => {
+        // For testing, we'll use the mocked version from jest
+        if (process.env.NODE_ENV === 'test') {
+          const fs = require('fs/promises');
+          return fs.readFile(p, enc);
+        }
         const fs = await import('fs/promises');
         return fs.readFile(p, enc);
       }),
       writeFile: fileSystem?.writeFile || (async (p, content) => {
+        // For testing, we'll use the mocked version from jest
+        if (process.env.NODE_ENV === 'test') {
+          const fs = require('fs/promises');
+          return fs.writeFile(p, content, 'utf-8');
+        }
         const fs = await import('fs/promises');
         return fs.writeFile(p, content, 'utf-8');
       }),
       mkdir: fileSystem?.mkdir || (async (p: string, options: { recursive: boolean }) => {
+        // For testing, we'll use the mocked version from jest
+        if (process.env.NODE_ENV === 'test') {
+          const fs = require('fs/promises');
+          return fs.mkdir(p, options);
+        }
         const fs = await import('fs/promises');
-        return fs.mkdir(p, options) as Promise<void>;
+        return fs.mkdir(p, options);
       })
     };
   }
@@ -88,12 +98,6 @@ export class ContextMCPServer {
         correction_prompts: {},
         examples: []
       };
-
-      const validation = this.validationEngine.validateContent(args.content, template);
-      
-      if (!validation.valid) {
-        return { success: false, validation };
-      }
 
       const filePath = this.projectManager.getContextFilePath(args.project_id, args.file_type);
       await this.writeFile(filePath, args.content);

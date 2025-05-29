@@ -1,23 +1,23 @@
-// Define mocks for file system operations
-const mockReadFile = jest.fn();
-const mockWriteFile = jest.fn();
-const mockMkdir = jest.fn();
+// Mock the fs/promises module
+jest.mock('fs/promises', () => ({
+  readFile: jest.fn(),
+  writeFile: jest.fn().mockResolvedValue(undefined),
+  mkdir: jest.fn().mockResolvedValue(undefined)
+}));
 
-// Create a mock file system implementation
-const mockFileSystem = {
-  readFile: mockReadFile,
-  writeFile: mockWriteFile,
-  mkdir: mockMkdir
-};
+import * as fsPromises from 'fs/promises';
+
+// Type assertions for mocks
+const mockReadFile = fsPromises.readFile as jest.Mock;
+const mockWriteFile = fsPromises.writeFile as jest.Mock;
+const mockMkdir = fsPromises.mkdir as jest.Mock;
 
 import { ContextMCPServer } from '../../mcp/ContextMCPServer';
 import { ProjectManager } from '../../project/ProjectManager';
-import { ValidationEngine } from '../../validation/ValidationEngine';
 
 describe('ContextMCPServer', () => {
   let server: ContextMCPServer;
   let mockProjectManager: jest.Mocked<ProjectManager>;
-  let mockValidationEngine: jest.Mocked<ValidationEngine>;
 
   beforeEach(() => {
     // Reset all mocks before each test
@@ -30,12 +30,6 @@ describe('ContextMCPServer', () => {
       getProjectPath: jest.fn()
     } as unknown as jest.Mocked<ProjectManager>;
     
-    mockValidationEngine = {
-      validateContent: jest.fn().mockReturnValue({
-        valid: true,
-        errors: []
-      })
-    } as unknown as jest.Mocked<ValidationEngine>;
     
     // Reset all file system mocks
     mockReadFile.mockClear();
@@ -44,9 +38,7 @@ describe('ContextMCPServer', () => {
     
     // Create server with mock file system
     server = new ContextMCPServer(
-      mockProjectManager, 
-      mockValidationEngine,
-      mockFileSystem
+      mockProjectManager
     );
   });
 
@@ -115,115 +107,53 @@ describe('ContextMCPServer', () => {
   });
 
   describe('update_context tool', () => {
-    it('should validate content before updating', async () => {
-      const testContent = '# Test Content';
-      const validationResult = {
-        valid: false,
-        errors: [
-          {
-            type: 'missing_section' as const,
-            section: 'project_overview',
-            message: 'Project overview is missing',
-            severity: 'error' as const,
-            correction_prompt: 'Add a project overview section',
-            template_example: '## Project Overview\nA brief description of the project.'
-          }
-        ]
-      };
+    it('should update content successfully', async () => {
+      const testContent = '# Overview\nTest content';
+      const filePath = '/test/path/mental_model.md';
+      
+      // Setup mocks
+      mockProjectManager.getContextFilePath.mockReturnValue(filePath);
+      mockReadFile.mockResolvedValue(testContent);
 
-      mockValidationEngine.validateContent.mockReturnValue(validationResult);
-
+      // Call the method
       const result = await server.handleUpdateContext({
         project_id: 'test-project',
         file_type: 'mental_model',
         content: testContent
       });
 
-      expect(mockValidationEngine.validateContent).toHaveBeenCalledWith(
-        testContent,
-        expect.any(Object) // template
-      );
-      
+      // Verify the result
       expect(result).toEqual({
-        success: false,
-        validation: validationResult
+        success: true
       });
+      
+      // Verify the file was written with the correct content
+      expect(mockWriteFile).toHaveBeenCalledWith(filePath, testContent, 'utf-8');
     });
 
-    it('should update content when validation passes', async () => {
+    it('should handle file write errors', async () => {
       const testContent = '# Overview\nTest content';
-      const filePath = '/test/path/mental_model.md';
+      const filePath = '/test/path/error.md';
+      const error = new Error('Failed to write file');
       
       // Setup mocks
-      mockValidationEngine.validateContent.mockReturnValue({
-        valid: true,
-        errors: []
-      });
-      
       mockProjectManager.getContextFilePath.mockReturnValue(filePath);
-      
-      // Mock the writeFile method
-      const originalWriteFile = server['writeFile'];
-      server['writeFile'] = jest.fn().mockResolvedValue(undefined);
-      
-      try {
-        // Call the method
-        const result = await server.handleUpdateContext({
-          project_id: 'test-project',
-          file_type: 'mental_model',
-          content: testContent
-        });
+      mockWriteFile.mockRejectedValue(error);
 
-        // Verify the result
-        expect(result).toEqual({
-          success: true
-        });
-        
-        // Verify the file was written with the correct content
-        expect(server['writeFile']).toHaveBeenCalledWith(
-          filePath,
-          testContent
-        );
-        
-        // Verify validation was called with the correct arguments
-        expect(mockValidationEngine.validateContent).toHaveBeenCalledWith(
-          testContent,
-          expect.objectContaining({
-            name: 'Default Template',
-            schema: expect.any(Object)
-          })
-        );
-      } finally {
-        // Restore original implementation
-        server['writeFile'] = originalWriteFile;
-      }
-    });
-    
-    it('should verify validation result directly', () => {
-      const testContent = '# Overview\nTest content';
-      const template = {
-        name: 'Default Template',
-        description: 'Default validation template',
-        schema: {
-          required_sections: [],
-          section_schemas: {},
-          format_rules: []
-        },
-        correction_prompts: {},
-        examples: []
-      };
-      
-      // Setup the mock to return a valid result
-      mockValidationEngine.validateContent.mockReturnValueOnce({
-        valid: true,
-        errors: []
+      // Call the method
+      const result = await server.handleUpdateContext({
+        project_id: 'test-project',
+        file_type: 'error',
+        content: testContent
       });
-      
-      const validationResult = mockValidationEngine.validateContent(testContent, template);
-      expect(validationResult.valid).toBe(true);
+
+      // Verify the result
+      expect(result).toEqual({
+        success: false
+      });
     });
     
-    it('should call writeFile with correct arguments', async () => {
+    it('should verify file writing functionality', async () => {
       const testContent = '# Test Content';
       const filePath = '/test/path/test_file.md';
       
@@ -243,71 +173,6 @@ describe('ContextMCPServer', () => {
         // Restore original implementation
         server['writeFile'] = originalWriteFile;
       }
-    });
-    
-    it('should implement writeFile correctly', async () => {
-      const testContent = '# Test Content';
-      const filePath = '/test/path/test_file.md';
-      
-      // Save original implementation
-      const originalWriteFile = server['writeFile'];
-      
-      // Mock the implementation
-      server['writeFile'] = jest.fn().mockImplementation(async (path, content) => {
-        // Verify the arguments
-        expect(path).toBe(filePath);
-        expect(content).toBe(testContent);
-      });
-      
-      try {
-        // Call the method
-        await server['writeFile'](filePath, testContent);
-        
-        // Verify the mock was called
-        expect(server['writeFile']).toHaveBeenCalledWith(
-          filePath,
-          testContent
-        );
-      } finally {
-        // Restore original implementation
-        server['writeFile'] = originalWriteFile;
-      }
-    });
-    
-    it('should not update content when validation fails', async () => {
-      const testContent = '# Invalid Content';
-      const filePath = '/test/path/mental_model.md';
-      const validationResult = {
-        valid: false,
-        errors: [{
-          type: 'format_error' as const,
-          section: 'overview',
-          message: 'Invalid format',
-          severity: 'error' as const,
-          correction_prompt: 'Please fix the format',
-          template_example: 'Example: ...'
-        }]
-      };
-
-      // Setup mocks
-      mockValidationEngine.validateContent.mockReturnValue(validationResult);
-      mockProjectManager.getContextFilePath.mockReturnValue(filePath);
-
-      // Call the method
-      const result = await server.handleUpdateContext({
-        project_id: 'test-project',
-        file_type: 'mental_model',
-        content: testContent
-      });
-
-      // Verify the result
-      expect(result).toEqual({
-        success: false,
-        validation: validationResult
-      });
-      
-      // Verify no file was written
-      expect(mockWriteFile).not.toHaveBeenCalled();
     });
   });
 });
