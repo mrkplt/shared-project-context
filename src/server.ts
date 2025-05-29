@@ -9,10 +9,6 @@ import { ContextMCPServer } from './mcp/ContextMCPServer';
 import * as path from 'path';
 import * as os from 'os';
 
-// Get the directory name in CommonJS
-const __filename = require.main?.filename || process.argv[1];
-const __dirname = path.dirname(__filename);
-
 // Default context root directory
 const DEFAULT_CONTEXT_ROOT = path.join(os.homedir(), '.cxms');
 
