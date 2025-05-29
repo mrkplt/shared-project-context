@@ -10,7 +10,7 @@ import * as path from 'path';
 import * as os from 'os';
 
 // Default context root directory
-const DEFAULT_CONTEXT_ROOT = path.join(os.homedir(), '.cxms');
+const DEFAULT_CONTEXT_ROOT = path.join(os.homedir(), 'src/cxms');
 
 // Main server class that implements the MCP protocol
 class ContextManagerServer {
@@ -25,11 +25,12 @@ class ContextManagerServer {
     this.validationEngine = new ValidationEngine();
     this.contextMCPServer = new ContextMCPServer(this.projectManager, this.validationEngine);
     
-    // Initialize MCP server
+    // Initialize MCP server with proper configuration
     this.server = new Server(
       {
         name: 'context-manager',
         version: '1.0.0',
+        description: 'Context Management Server for MCP',
       },
       {
         capabilities: {
@@ -107,9 +108,38 @@ class ContextManagerServer {
   }
   // Start the server
   public async start(): Promise<void> {
-    const transport = new StdioServerTransport();
-    await this.server.connect(transport);
-    console.log('Context Manager MCP Server is running on stdio');
+    try {
+      const transport = new StdioServerTransport();
+      
+      // Connect the server to the transport
+      await this.server.connect(transport);
+      
+      // Handle process termination
+      const shutdown = (signal: string) => {
+        // console.log(`Shutting down (${signal})...`);
+        process.exit(0);
+      };
+      
+      // Set up signal handlers
+      process.on('SIGINT', () => shutdown('SIGINT'));
+      process.on('SIGTERM', () => shutdown('SIGTERM'));
+      
+      // Handle uncaught exceptions
+      process.on('uncaughtException', (error) => {
+        console.error('Uncaught exception:', error);
+        process.exit(1);
+      });
+      
+      // Handle unhandled promise rejections
+      process.on('unhandledRejection', (reason, promise) => {
+        console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+        process.exit(1);
+      });
+      
+    } catch (error) {
+      console.error('Failed to start MCP server:', error);
+      process.exit(1);
+    }
   }
 }
 // Start the server when this file is run directly

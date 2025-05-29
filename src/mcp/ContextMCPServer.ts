@@ -11,7 +11,6 @@ interface FileSystem {
 }
 
 export class ContextMCPServer {
-  private server: Server;
   private projectManager: ProjectManager;
   private validationEngine: ValidationEngine;
   private fs: FileSystem;
@@ -36,21 +35,13 @@ export class ContextMCPServer {
       }),
       mkdir: fileSystem?.mkdir || (async (p: string, options: { recursive: boolean }) => {
         const fs = await import('fs/promises');
-        return fs.mkdir(p, options) as Promise<void>; // Type assertion
+        return fs.mkdir(p, options) as Promise<void>;
       })
     };
-    
-    this.server = new Server({
-      name: 'context-manager',
-      version: '1.0.0'
-    });
-    this.setupHandlers();
   }
 
-  private setupHandlers(): void {
-    // In a real implementation, this would set up MCP protocol handlers
-    // For now, we'll just expose the methods directly for testing
-  }
+  // No need for explicit server setup as we're using the main server instance
+  // from the ContextManagerServer class
 
   async handleGetContext(args: { project_id: string; file_type: string }): Promise<{
     success: boolean;
