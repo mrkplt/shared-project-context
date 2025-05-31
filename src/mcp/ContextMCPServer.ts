@@ -117,7 +117,9 @@ export class ContextMCPServer {
         success: true,
         content: [{
           type: 'text',
-          text: 'File updated successfully'
+          text: {
+            text: 'File updated successfully'
+          }
         }]
       };
     } catch (error) {

@@ -25,9 +25,9 @@ class ContextManagerServer {
     // Initialize MCP server with proper configuration
     this.server = new Server(
       {
-        name: 'context-manager',
+        name: 'project-context',
         version: '1.0.0',
-        description: 'Context Management Server for MCP',
+        description: "This server is intended for storing context files for AI assistants. Context files go into projects, and each project has its own context files. Context files are used for storing important information between sessions and for you or other AI assistansts to quickly come up to date on previous discussions. Context files are never for humans so you can wirite to them in the most efficient ways possible.",
       },
       {
         capabilities: {
@@ -46,7 +46,7 @@ class ContextManagerServer {
       tools: [
         {
           name: 'get_context',
-          description: 'Get context file with current content',
+          description: 'Retrieve the context from a file for a project that you or another AI assistant stored for later use.',
           inputSchema: {
             type: 'object',
             properties: {
@@ -61,7 +61,7 @@ class ContextManagerServer {
         },
         {
           name: 'update_context',
-          description: 'Update context file with validation and correction guidance',
+          description: 'Update a projects context file with with new information you or another agent will want to use later',
           inputSchema: {
             type: 'object',
             properties: {
