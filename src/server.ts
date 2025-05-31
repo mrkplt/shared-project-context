@@ -73,6 +73,47 @@ class ContextManagerServer {
               content: { type: 'string' }
             },
             required: ['project_id', 'file_type', 'content']
+          },
+          outputSchema: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              content: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    type: { type: 'string' },
+                    text: { type: 'string' }
+                  },
+                  required: ['type', 'text']
+                }
+              },
+              error: { type: 'string' },
+              validation: {
+                type: 'object',
+                properties: {
+                  valid: { type: 'boolean' },
+                  errors: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        type: { type: 'string' },
+                        section: { type: 'string' },
+                        message: { type: 'string' },
+                        severity: { type: 'string', enum: ['error', 'warning'] },
+                        correction_prompt: { type: 'string' },
+                        template_example: { type: 'string' }
+                      },
+                      required: ['type', 'message', 'severity', 'correction_prompt', 'template_example']
+                    }
+                  }
+                },
+                required: ['valid', 'errors']
+              }
+            },
+            required: ['success']
           }
         }
       ]
@@ -113,7 +154,6 @@ class ContextManagerServer {
       
       // Handle process termination
       const shutdown = (signal: string) => {
-        // console.log(`Shutting down (${signal})...`);
         process.exit(0);
       };
       
