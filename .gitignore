@@ -17,7 +17,8 @@ Network Trash Folder
 Temporary Items
 .apdisk
 coverage
-projects
+projects/*
+!projects/cxms
 
 # Python
 __pycache__/
