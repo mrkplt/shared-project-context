@@ -1,4 +1,4 @@
-// Define mockPath first
+// Mock path module
 const mockPath = {
   join: (...args: string[]) => args.join('/'),
   basename: (p: string) => p.split('/').pop() || '',
@@ -20,8 +20,14 @@ const mockPath = {
   format: (p: any) => p.base || '',
 };
 
-// Now mock the modules
 jest.mock('path', () => mockPath);
+
+// Mock os module
+const mockOs = {
+  homedir: jest.fn().mockReturnValue('/home/user')
+};
+
+jest.mock('os', () => mockOs);
 
 import { ProjectManager } from '../../project/ProjectManager';
 
@@ -55,127 +61,158 @@ describe('ProjectManager', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     
-    // Mock project ID generation
-    jest.spyOn(ProjectManager.prototype as any, 'generateProjectId')
-      .mockReturnValue(testProjectId);
-
-    projectManager = new ProjectManager(testContextRoot);
+    // Reset the mock implementation
+    mockOs.homedir.mockReturnValue('/home/user');
+    
+    // Create a new instance for each test
+    projectManager = new ProjectManager();
+  });
+  
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   describe('initProject', () => {
-    it('should create project directory structure', async () => {
-      mockAccess.mockRejectedValue(new Error('Not found')); // Simulate directory doesn't exist
-      mockMkdir.mockResolvedValue(undefined);
-      mockWriteFile.mockResolvedValue(undefined);
+    it('should create project directory if it does not exist', async () => {
+      const projectPath = '/path/to/project';
+      const projectId = 'test-project';
+      const expectedContextPath = '/home/user/.shared-project-context/projects/test-project';
       
-      const projectId = await projectManager.initProject(testProjectPath);
-
-      expect(projectId).toBe(testProjectId);
+      // Mock the path.basename to return our test project ID
+      jest.spyOn(mockPath, 'basename').mockReturnValue(projectId);
       
-      // Verify project directory was created
+      // First call to access should fail (directory doesn't exist)
+      mockAccess.mockRejectedValueOnce(new Error('Not found'));
+      
+      // Call the method
+      const result = await projectManager.initProject(projectPath);
+      
+      // Verify the result
+      expect(result).toBe(projectId);
+      
+      // Verify the directory was created with the correct path
       expect(mockMkdir).toHaveBeenCalledWith(
-        `${testContextRoot}/projects/${testProjectId}`,
+        expectedContextPath,
         { recursive: true }
-      );
-      
-      // Verify templates directory was created
-      expect(mockMkdir).toHaveBeenCalledWith(
-        `${testContextRoot}/projects/${testProjectId}/templates`,
-        { recursive: true }
-      );
-      
-      // Verify default template was written
-      expect(mockWriteFile).toHaveBeenCalledWith(
-        expect.stringContaining('default.json'),
-        expect.any(String),
-        'utf-8'
       );
     });
-
-    it('should return existing project ID if already initialized', async () => {
-      mockAccess.mockResolvedValue(undefined); // Simulate directory exists
+    
+    it('should return existing project ID if directory already exists', async () => {
+      const projectPath = '/path/to/existing/project';
+      const projectId = 'existing-project';
       
-      const projectId = await projectManager.initProject(testProjectPath);
+      // Mock the path.basename to return our test project ID
+      jest.spyOn(mockPath, 'basename').mockReturnValue(projectId);
       
-      expect(projectId).toBe(testProjectId);
+      // First call to access should succeed (directory exists)
+      mockAccess.mockResolvedValue(undefined);
+      
+      // Call the method
+      const result = await projectManager.initProject(projectPath);
+      
+      // Verify the result
+      expect(result).toBe(projectId);
+      
+      // Verify no directory was created
       expect(mockMkdir).not.toHaveBeenCalled();
+    });
+    
+    it('should handle errors during directory creation', async () => {
+      const projectPath = '/path/to/error/project';
+      const projectId = 'error-project';
+      const error = new Error('Failed to create directory');
+      
+      // Mock the path.basename to return our test project ID
+      jest.spyOn(mockPath, 'basename').mockReturnValue(projectId);
+      
+      // First call to access should fail (directory doesn't exist)
+      mockAccess.mockRejectedValueOnce(new Error('Not found'));
+      
+      // Mock mkdir to throw an error
+      mockMkdir.mockRejectedValueOnce(error);
+      
+      // Call the method and expect it to throw
+      await expect(projectManager.initProject(projectPath))
+        .rejects
+        .toThrow('Failed to create directory');
     });
   });
 
   describe('getContextFilePath', () => {
-    it('should return correct file path for context type', () => {
+    it('should return correct file path for context type', async () => {
       const projectId = 'test-project';
       const contextType = 'mental_model';
+      const expectedPath = '/home/user/.shared-project-context/projects/test-project/mental_model.md';
       
-      // Add the project to the projects map
-      (projectManager as any).projects.set(projectId, {
-        id: projectId,
-        name: 'Test Project',
-        path: '/test/path',
-        contextPath: `${testContextRoot}/projects/${projectId}`,
-        templates: {}
-      });
-
-      const result = projectManager.getContextFilePath(projectId, contextType);
-
-      expect(result).toBe(`${testContextRoot}/projects/${projectId}/${contextType}.md`);
+      // Mock access to simulate project exists
+      mockAccess.mockResolvedValue(undefined);
+      
+      // Call the method
+      const result = await projectManager.getContextFilePath(projectId, contextType);
+      
+      // Verify the result
+      expect(result).toBe(expectedPath);
+      
+      // Verify access was called with the correct path
+      expect(mockAccess).toHaveBeenCalledWith(
+        '/home/user/.shared-project-context/projects/test-project'
+      );
     });
-
-    it('should throw for unknown project ID', () => {
-      const unknownProjectId = 'unknown-project';
+    
+    it('should throw for non-existent project', async () => {
+      const projectId = 'nonexistent-project';
       const contextType = 'mental_model';
-
-      expect(() => {
-        projectManager.getContextFilePath(unknownProjectId, contextType);
-      }).toThrow(`Project not found: ${unknownProjectId}`);
+      
+      // Mock access to throw an error
+      mockAccess.mockRejectedValue(new Error('Not found'));
+      
+      // Call the method and expect it to throw
+      await expect(projectManager.getContextFilePath(projectId, contextType))
+        .rejects
+        .toThrow(`Project not found: ${projectId}`);
+    });
+    
+    it('should handle access errors appropriately', async () => {
+      const projectId = 'error-project';
+      const contextType = 'mental_model';
+      const error = new Error('Permission denied');
+      
+      // Mock access to throw a permission error
+      mockAccess.mockRejectedValue(error);
+      
+      // Call the method and expect it to throw with the project not found message
+      // since we don't expose filesystem errors directly
+      await expect(projectManager.getContextFilePath(projectId, contextType))
+        .rejects
+        .toThrow(`Project not found: ${projectId}`);
     });
   });
 
-  describe('loadTemplates', () => {
-    it('should load and validate templates', async () => {
-      const templatesDir = '/test/templates';
-      const templateFiles = ['template1.json', 'template2.json'];
-      const template1 = { 
-        name: 'template1', 
-        description: 'Test template 1',
-        schema: { 
-          required_sections: [],
-          section_schemas: {},
-          format_rules: []
-        },
-        correction_prompts: {}
-      };
-      const template2 = { 
-        name: 'template2',
-        description: 'Test template 2',
-        schema: { 
-          required_sections: [],
-          section_schemas: {},
-          format_rules: []
-        },
-        correction_prompts: {}
-      };
-
-      // Mock the implementation to return template files
-      mockReaddir.mockResolvedValue(templateFiles);
+  describe('getContextRoot', () => {
+    it('should return the correct context root path', () => {
+      // Set up the expected path
+      const expectedPath = '/home/user/.shared-project-context';
       
-      // Mock readFile to return different content based on the file name
-      mockReadFile.mockImplementation((filePath) => {
-        if (filePath.endsWith('template1.json')) {
-          return Promise.resolve(JSON.stringify(template1));
-        } else if (filePath.endsWith('template2.json')) {
-          return Promise.resolve(JSON.stringify(template2));
-        }
-        return Promise.reject(new Error('File not found'));
-      });
-
-      const templates = await (projectManager as any).loadTemplates(templatesDir);
-
-      // Verify the templates were loaded correctly
-      expect(templates).toEqual({
-        template1: expect.objectContaining({ name: 'template1' }),
-        template2: expect.objectContaining({ name: 'template2' })
-      });
+      // Call the method
+      const result = projectManager.getContextRoot();
+      
+      // Verify the result
+      expect(result).toBe(expectedPath);
+      
+      // Verify homedir was called
+      expect(mockOs.homedir).toHaveBeenCalled();
+    });
+    
+    it('should return a valid path', () => {
+      // Call the method
+      const result = projectManager.getContextRoot();
+      
+      // Verify the result is a non-empty string
+      expect(typeof result).toBe('string');
+      expect(result.length).toBeGreaterThan(0);
+      
+      // Verify it contains the expected directory name
+      expect(result).toContain('.shared-project-context');
     });
   });
 });
