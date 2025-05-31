@@ -55,7 +55,10 @@ export class ContextMCPServer {
 
   async handleGetContext(args: { project_id: string; file_type: string }): Promise<{
     success: boolean;
-    content?: string;
+    content?: {
+      type: string;
+      text: string;
+    }[];
     error?: string;
   }> {
     try {
@@ -63,7 +66,13 @@ export class ContextMCPServer {
       const filePath = await this.projectManager.getContextFilePath(args.project_id, args.file_type);
       console.log(`[DEBUG] Resolved file path: ${filePath}`);
       const content = await this.readFile(filePath);
-      return { success: true, content };
+      return { 
+        success: true, 
+        content: [{
+          type: 'text',
+          text: content
+        }]
+      };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error(`[ERROR] handleGetContext failed:`, error);
@@ -106,7 +115,9 @@ export class ContextMCPServer {
       
       await this.writeFile(filePath, args.content);
       
-      return { success: true };
+      return { 
+        success: true 
+      };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error(`[ERROR] handleUpdateContext failed:`, error);

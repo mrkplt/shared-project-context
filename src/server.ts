@@ -53,7 +53,7 @@ class ContextManagerServer {
               project_id: { type: 'string' },
               file_type: { 
                 type: 'string', 
-                enum: ['mental_model', 'session_summary', 'bugs', 'features'] 
+                // enum: ['mental_model', 'session_summary', 'bugs', 'features'] 
               }
             },
             required: ['project_id', 'file_type']
@@ -68,7 +68,7 @@ class ContextManagerServer {
               project_id: { type: 'string' },
               file_type: { 
                 type: 'string', 
-                enum: ['mental_model', 'session_summary', 'bugs', 'features'] 
+                // enum: ['mental_model', 'session_summary', 'bugs', 'features'] 
               },
               content: { type: 'string' }
             },
