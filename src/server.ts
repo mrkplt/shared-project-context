@@ -25,9 +25,14 @@ class ContextManagerServer {
     // Initialize MCP server with proper configuration
     this.server = new Server(
       {
-        name: 'project-context',
+        name: 'shared-project-context',
         version: '1.0.0',
-        description: "This server is intended for storing context files for AI assistants. Context files go into projects, and each project has its own context files. Context files are used for storing important information between sessions and for you or other AI assistansts to quickly come up to date on previous discussions. Context files are never for humans so you can wirite to them in the most efficient ways possible.",
+        description: `This server is intended for storing context files for AI assistants.
+Project names are one or more words separated by hyphens. For example, "my-project" or "my-project-2".
+Context files go into projects, and each project has its own context files.
+Context files are named with one or more words separated by hyphens. For example, "mental-model" or "session-summary".
+Context files are used for storing important information between sessions and for you or other AI assistants to quickly come up to date on previous discussions.
+Context files are never for humans so you can write to them in the most efficient ways possible.`,
       },
       {
         capabilities: {
