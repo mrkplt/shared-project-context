@@ -5,11 +5,6 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { ProjectManager } from './project/ProjectManager';
 import { ContextMCPServer } from './mcp/ContextMCPServer';
-import * as path from 'path';
-import * as os from 'os';
-
-// Default context root directory
-const DEFAULT_CONTEXT_ROOT = path.join(os.homedir(), 'src/cxms');
 
 // Main server class that implements the MCP protocol
 class ContextManagerServer {
@@ -19,7 +14,7 @@ class ContextManagerServer {
 
   constructor() {
     // Initialize components
-    this.projectManager = new ProjectManager(DEFAULT_CONTEXT_ROOT);
+    this.projectManager = new ProjectManager;
     this.contextMCPServer = new ContextMCPServer(this.projectManager);
     
     // Initialize MCP server with proper configuration
@@ -36,7 +31,31 @@ Context files are never for humans so you can write to them in the most efficien
       },
       {
         capabilities: {
-          tools: {}
+          tools: {
+            get_context: {
+              description: 'Retrieve the context from a file for a project that you or another AI assistant stored for later use.',
+              parameters: {
+                type: 'object',
+                properties: {
+                  project_id: { type: 'string' },
+                  file_type: { type: 'string' }
+                },
+                required: ['project_id', 'file_type']
+              }
+            },
+            update_context: {
+              description: 'Update or create a context file for a project.',
+              parameters: {
+                type: 'object',
+                properties: {
+                  project_id: { type: 'string' },
+                  file_type: { type: 'string' },
+                  content: { type: 'string' }
+                },
+                required: ['project_id', 'file_type', 'content']
+              }
+            }
+          }
         }
       }
     );

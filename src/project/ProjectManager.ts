@@ -1,12 +1,12 @@
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { existsSync } from 'fs';
+import * as os from 'os';
 
 export class ProjectManager {
   private contextRoot: string;
 
-  constructor(contextRoot: string) {
-    this.contextRoot = contextRoot;
+  constructor() {
+    this.contextRoot = path.join(os.homedir(), '.shared-project-context');;
   }
 
   getContextRoot(): string {
