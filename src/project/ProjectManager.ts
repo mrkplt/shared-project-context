@@ -1,8 +1,8 @@
 import * as path from 'path';
 import * as fs from 'fs/promises';
+import { existsSync } from 'fs';
 
 export class ProjectManager {
-  private projects: Map<string, ProjectConfig> = new Map();
   private contextRoot: string;
 
   constructor(contextRoot: string) {
@@ -13,12 +13,14 @@ export class ProjectManager {
     return this.contextRoot;
   }
 
-  getContextFilePath(projectId: string, fileType: string): string {
-    const project = this.projects.get(projectId);
-    if (!project) {
+  async getContextFilePath(projectId: string, fileType: string): Promise<string> {
+    const projectPath = path.join(this.contextRoot, 'projects', projectId);
+    try {
+      await fs.access(projectPath);
+      return path.join(projectPath, `${fileType}.md`);
+    } catch (error) {
       throw new Error(`Project not found: ${projectId}`);
     }
-    return path.join(project.contextPath, `${fileType}.md`);
   }
 
   async initProject(projectPath: string): Promise<string> {
@@ -43,14 +45,6 @@ export class ProjectManager {
       }
     }
     
-    const config: ProjectConfig = {
-      id: projectId,
-      name: path.basename(projectPath),
-      path: projectPath,
-      contextPath
-    };
-    
-    this.projects.set(projectId, config);
     return projectId;
   }
 }

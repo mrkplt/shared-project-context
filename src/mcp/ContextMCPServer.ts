@@ -59,11 +59,15 @@ export class ContextMCPServer {
     error?: string;
   }> {
     try {
-      const filePath = this.projectManager.getContextFilePath(args.project_id, args.file_type);
+      console.log(`[DEBUG] handleGetContext - project_id: ${args.project_id}, file_type: ${args.file_type}`);
+      const filePath = await this.projectManager.getContextFilePath(args.project_id, args.file_type);
+      console.log(`[DEBUG] Resolved file path: ${filePath}`);
       const content = await this.readFile(filePath);
       return { success: true, content };
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : String(error) };
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`[ERROR] handleGetContext failed:`, error);
+      return { success: false, error: errorMessage };
     }
   }
 
@@ -97,7 +101,7 @@ export class ContextMCPServer {
       await this.projectManager.initProject(projectDir);
       
       // Now get the file path
-      const filePath = this.projectManager.getContextFilePath(args.project_id, args.file_type);
+      const filePath = await this.projectManager.getContextFilePath(args.project_id, args.file_type);
       console.log(`[DEBUG] handleUpdateContext - filePath: ${filePath}`);
       
       await this.writeFile(filePath, args.content);
