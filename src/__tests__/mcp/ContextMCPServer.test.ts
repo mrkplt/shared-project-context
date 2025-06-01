@@ -99,7 +99,7 @@ describe('ContextMCPServer', () => {
       const filePath = '/test/path/nonexistent.md';
       
       // Setup mocks
-      mockProjectManager.getContextFilePath.mockReturnValue(filePath);
+      mockProjectManager.getContextFilePath.mockResolvedValue(filePath);
       const error = new Error('File not found');
       (error as NodeJS.ErrnoException).code = 'ENOENT';
       mockReadFile.mockRejectedValue(error);
@@ -126,7 +126,7 @@ describe('ContextMCPServer', () => {
       const projectDir = '/test/path';
       
       // Setup mocks
-      mockProjectManager.getContextFilePath.mockReturnValue(filePath);
+      mockProjectManager.getContextFilePath.mockResolvedValue(filePath);
       mockProjectManager.initProject = jest.fn().mockResolvedValue('test-project');
       mockProjectManager.getContextRoot.mockReturnValue(mockContextRoot);
       mockReadFile.mockResolvedValue(testContent);
@@ -162,7 +162,7 @@ describe('ContextMCPServer', () => {
       const error = new Error('Failed to write file');
       
 // Setup mocks
-      mockProjectManager.getContextFilePath.mockReturnValue(filePath);
+      mockProjectManager.getContextFilePath.mockResolvedValue(filePath);
       mockProjectManager.initProject = jest.fn().mockResolvedValue('test-project');
       mockProjectManager.getContextRoot.mockReturnValue(mockContextRoot);
       mockMkdir.mockResolvedValue(undefined);
@@ -191,7 +191,7 @@ describe('ContextMCPServer', () => {
       const error = new Error('Failed to initialize project');
       
 // Setup mocks
-      mockProjectManager.getContextFilePath.mockReturnValue(filePath);
+      mockProjectManager.getContextFilePath.mockResolvedValue(filePath);
       mockProjectManager.initProject = jest.fn().mockImplementation((path) => {
         // The actual implementation would create the project directory
         // before failing, so we'll simulate that behavior
@@ -228,7 +228,7 @@ describe('ContextMCPServer', () => {
       const error = new Error('Permission denied');
       
 // Setup mocks
-      mockProjectManager.getContextFilePath.mockReturnValue(filePath);
+      mockProjectManager.getContextFilePath.mockResolvedValue(filePath);
       mockProjectManager.initProject = jest.fn().mockResolvedValue('test-project');
       mockProjectManager.getContextRoot.mockReturnValue(mockContextRoot);
       mockMkdir.mockResolvedValue(undefined);
@@ -248,6 +248,123 @@ describe('ContextMCPServer', () => {
         error: 'Failed to write file'
       });
       expect(mockProjectManager.initProject).toHaveBeenCalledWith(projectDir);
+    });
+  });
+
+  describe('listProjects', () => {
+    it('should return an empty array when projects directory does not exist', async () => {
+      // Setup mocks
+      const projectsDir = '/mock/projects';
+      mockProjectManager.getContextRoot.mockReturnValue(projectsDir);
+      
+      // Mock fs.access to throw ENOENT (no such file or directory)
+      const mockAccess = jest.spyOn(server as any, 'fs', 'get').mockImplementation(() => ({
+        ...jest.requireActual('fs/promises'),
+        access: jest.fn().mockRejectedValue({ code: 'ENOENT' })
+      }));
+
+      // Call the method
+      const result = await server.listProjects();
+
+      // Verify the result
+      expect(result).toEqual({
+        success: true,
+        projects: []
+      });
+      
+      // Cleanup
+      mockAccess.mockRestore();
+    });
+
+    it('should return list of project directories', async () => {
+      // Setup mocks
+      const projectsDir = '/mock/projects';
+      const mockProjects = ['project1', 'project2'];
+      
+      mockProjectManager.getContextRoot.mockReturnValue(projectsDir);
+      
+      // Mock fs.access to succeed
+      const mockAccess = jest.spyOn(server as any, 'fs', 'get').mockImplementation(() => ({
+        ...jest.requireActual('fs/promises'),
+        access: jest.fn().mockResolvedValue(undefined),
+        readdir: jest.fn().mockResolvedValue([
+          { name: 'project1', isDirectory: () => true },
+          { name: 'project2', isDirectory: () => true },
+          { name: '.hidden', isDirectory: () => true },
+          { name: 'not-a-dir', isDirectory: () => false }
+        ])
+      }));
+
+      // Call the method
+      const result = await server.listProjects();
+
+      // Verify the result
+      expect(result).toEqual({
+        success: true,
+        projects: mockProjects
+      });
+      
+      // Verify readdir was called with correct arguments
+      expect(mockAccess().readdir).toHaveBeenCalledWith(projectsDir, { withFileTypes: true });
+      
+      // Cleanup
+      mockAccess.mockRestore();
+    });
+
+    it('should handle permission denied error', async () => {
+      // Setup mocks
+      const projectsDir = '/mock/projects';
+      mockProjectManager.getContextRoot.mockReturnValue(projectsDir);
+      
+      // Mock fs.access to throw EACCES (permission denied)
+      const mockAccess = jest.spyOn(server as any, 'fs', 'get').mockImplementation(() => ({
+        ...jest.requireActual('fs/promises'),
+        access: jest.fn().mockRejectedValue({ code: 'EACCES' })
+      }));
+
+      // Call the method
+      const result = await server.listProjects();
+
+      // Verify the result
+      expect(result).toEqual({
+        success: false,
+        error: {
+          code: 'PERMISSION_DENIED',
+          message: 'Insufficient permissions to read projects directory'
+        }
+      });
+      
+      // Cleanup
+      mockAccess.mockRestore();
+    });
+
+    it('should handle unexpected errors', async () => {
+      // Setup mocks
+      const projectsDir = '/mock/projects';
+      const errorMessage = 'Unexpected error';
+      mockProjectManager.getContextRoot.mockReturnValue(projectsDir);
+      
+      // Mock fs.access to throw an unexpected error
+      const mockAccess = jest.spyOn(server as any, 'fs', 'get').mockImplementation(() => ({
+        ...jest.requireActual('fs/promises'),
+        access: jest.fn().mockRejectedValue(new Error(errorMessage))
+      }));
+
+      // Call the method
+      const result = await server.listProjects();
+
+      // Verify the result
+      expect(result).toEqual({
+        success: false,
+        error: {
+          code: 'UNKNOWN_ERROR',
+          message: 'Failed to list projects',
+          details: errorMessage
+        }
+      });
+      
+      // Cleanup
+      mockAccess.mockRestore();
     });
   });
 });
