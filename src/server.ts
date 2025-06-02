@@ -31,31 +31,7 @@ Context files are never for humans so you can write to them in the most efficien
       },
       {
         capabilities: {
-          tools: {
-            get_context: {
-              description: 'Retrieve the context from a file for a project that you or another AI assistant stored for later use.',
-              parameters: {
-                type: 'object',
-                properties: {
-                  project_id: { type: 'string' },
-                  file_type: { type: 'string' }
-                },
-                required: ['project_id', 'file_type']
-              }
-            },
-            update_context: {
-              description: 'Update or create a context file for a project.',
-              parameters: {
-                type: 'object',
-                properties: {
-                  project_id: { type: 'string' },
-                  file_type: { type: 'string' },
-                  content: { type: 'string' }
-                },
-                required: ['project_id', 'file_type', 'content']
-              }
-            }
-          }
+          tools: {}
         }
       }
     );
@@ -68,6 +44,15 @@ Context files are never for humans so you can write to them in the most efficien
     // List available tools
     this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
       tools: [
+        {
+          name: 'list_projects',
+          description: 'List all available projects',
+          inputSchema: {
+            type: 'object',
+            properties: {},
+            required: []
+          }
+        },
         {
           name: 'get_context',
           description: 'Retrieve the context from a file for a project that you or another AI assistant stored for later use.',
@@ -97,47 +82,6 @@ Context files are never for humans so you can write to them in the most efficien
               content: { type: 'string' }
             },
             required: ['project_id', 'file_type', 'content']
-          },
-          outputSchema: {
-            type: 'object',
-            properties: {
-              success: { type: 'boolean' },
-              content: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    type: { type: 'string' },
-                    text: { type: 'string' }
-                  },
-                  required: ['type', 'text']
-                }
-              },
-              error: { type: 'string' },
-              validation: {
-                type: 'object',
-                properties: {
-                  valid: { type: 'boolean' },
-                  errors: {
-                    type: 'array',
-                    items: {
-                      type: 'object',
-                      properties: {
-                        type: { type: 'string' },
-                        section: { type: 'string' },
-                        message: { type: 'string' },
-                        severity: { type: 'string', enum: ['error', 'warning'] },
-                        correction_prompt: { type: 'string' },
-                        template_example: { type: 'string' }
-                      },
-                      required: ['type', 'message', 'severity', 'correction_prompt', 'template_example']
-                    }
-                  }
-                },
-                required: ['valid', 'errors']
-              }
-            },
-            required: ['success']
           }
         }
       ]
@@ -145,29 +89,30 @@ Context files are never for humans so you can write to them in the most efficien
   
     // Handle tool execution
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
-      const { name, arguments: args } = request.params;
+      const { params } = request;
+      const { name, arguments: args = {} } = params;
       
-      try {
-        switch (name) {
-          case 'get_context':
-            return await this.contextMCPServer.handleGetContext(args as { project_id: string; file_type: string });
-            
-          case 'update_context':
-            return await this.contextMCPServer.handleUpdateContext(
-              args as { project_id: string; file_type: string; content: string }
-            );
-            
-          default:
-            throw new Error(`Unknown tool: ${name}`);
-        }
-      } catch (error) {
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : String(error)
-        };
+      switch (name) {
+        case 'list_projects':
+          return {
+            content: [{
+              type: 'text',
+              text: await this.projectManager.listProjects()
+            }]
+          };
+        case 'get_context':
+          return await this.contextMCPServer.handleGetContext(args as { project_id: string; file_type: string });
+        case 'update_context':
+          return await this.contextMCPServer.handleUpdateContext(
+            args as { project_id: string; file_type: string; content: string }
+          );
+          
+        default:
+          throw new Error(`Unknown tool: ${name}`);
       }
     });
   }
+  
   // Start the server
   public async start(): Promise<void> {
     try {
@@ -203,6 +148,7 @@ Context files are never for humans so you can write to them in the most efficien
     }
   }
 }
+
 // Start the server when this file is run directly
 if (require.main === module) {
   const server = new ContextManagerServer();

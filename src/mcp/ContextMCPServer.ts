@@ -53,81 +53,40 @@ export class ContextMCPServer {
   // No need for explicit server setup as we're using the main server instance
   // from the ContextManagerServer class
 
-  async handleGetContext(args: { project_id: string; file_type: string }): Promise<{
-    success: boolean;
-    content?: {
-      type: string;
-      text: string;
-    }[];
-    error?: string;
-  }> {
-    try {
-      const filePath = await this.projectManager.getContextFilePath(args.project_id, args.file_type);
-      const content = await this.readFile(filePath);
-      return { 
-        success: true, 
-        content: [{
-          type: 'text',
-          text: content
-        }]
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-
-      return { success: false, error: errorMessage };
-    }
+  async handleGetContext(args: { project_id: string; file_type: string }) {
+    const filePath = await this.projectManager.getContextFilePath(args.project_id, args.file_type);
+    const content = await this.readFile(filePath);
+    
+    return {
+      content: [{
+        type: 'text',
+        text: content
+      }]
+    };
   }
-
+  
   async handleUpdateContext(args: {
     project_id: string;
     file_type: string;
     content: string;
-  }): Promise<{
-    success: boolean;
-    content?: {
-      type: string;
-      text: string;
-    }[];
-    error?: string;
-    validation?: {
-      valid: boolean;
-      errors: Array<{
-        type: string;
-        section?: string;
-        message: string;
-        severity: 'error' | 'warning';
-        correction_prompt: string;
-        template_example: string;
-      }>;
+  }) {
+    // First initialize the project if it doesn't exist
+    const contextRoot = this.projectManager.getContextRoot();
+    const projectDir = path.join(contextRoot, 'projects', args.project_id);
+    
+    await this.projectManager.initProject(projectDir);
+    
+    // Now get the file path
+    const filePath = await this.projectManager.getContextFilePath(args.project_id, args.file_type);
+    
+    await this.writeFile(filePath, args.content);
+    
+    return {
+      content: [{
+        type: 'text',
+        text: 'File updated successfully'
+      }]
     };
-  }> {
-    try {
-      // First initialize the project if it doesn't exist
-      const contextRoot = this.projectManager.getContextRoot();
-      const projectDir = path.join(contextRoot, 'projects', args.project_id);
-      
-      await this.projectManager.initProject(projectDir);
-      
-      // Now get the file path
-      const filePath = await this.projectManager.getContextFilePath(args.project_id, args.file_type);
-      
-      await this.writeFile(filePath, args.content);
-      
-      return { 
-        success: true,
-        content: [{
-          type: 'text',
-          text: 'File updated successfully'
-        }]
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error(`[ERROR] handleUpdateContext failed:`, error);
-      return { 
-        success: false, 
-        error: errorMessage 
-      };
-    }
   }
 
   private async readFile(filePath: string): Promise<string> {

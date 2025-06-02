@@ -41,11 +41,30 @@ export class ProjectManager {
     
     return projectId;
   }
-}
 
-interface ProjectConfig {
-  id: string;
-  name: string;
-  path: string;
-  contextPath: string;
+  async listProjects(): Promise<string> {
+    const projectsDir = path.join(this.contextRoot, 'projects');
+    
+    try {
+      await fs.access(projectsDir);
+      
+      const entries = await fs.readdir(projectsDir, { withFileTypes: true });
+      const projects = entries
+        .filter(entry => entry.isDirectory())
+        .map(entry => entry.name);
+        
+      return JSON.stringify(projects);
+    } catch (error: any) {
+      if (error.code === 'ENOENT') {
+        // Projects directory doesn't exist yet, return empty array
+        return JSON.stringify([]);
+      } else if (error.code === 'EACCES') {
+        // Permission denied
+        throw new Error('Insufficient permissions to read projects directory');
+      }
+      
+      // Re-throw unexpected errors
+      throw error;
+    }
+  }
 }
