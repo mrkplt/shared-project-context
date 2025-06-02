@@ -54,6 +54,17 @@ Context files are never for humans so you can write to them in the most efficien
           }
         },
         {
+          name: 'list_file_types',
+          description: 'List all available file types for a project',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              project_id: { type: 'string' }
+            },
+            required: ['project_id']
+          }
+        },
+        {
           name: 'get_context',
           description: 'Retrieve the context from a file for a project that you or another AI assistant stored for later use.',
           inputSchema: {
@@ -93,6 +104,8 @@ Context files are never for humans so you can write to them in the most efficien
       const { name, arguments: args = {} } = params;
       
       switch (name) {
+        case 'list_file_types':
+          return await this.contextMCPServer.handleListFileTypes(args as { project_id: string });
         case 'list_projects':
           return {
             content: [{

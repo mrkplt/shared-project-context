@@ -1,4 +1,5 @@
 import * as path from 'path';
+import * as fs from 'fs/promises';
 import { ProjectManager } from '../project/ProjectManager';
 
 // Define file system interface for better testability
@@ -100,6 +101,51 @@ export class ContextMCPServer {
     }
   }
 
+  async handleListFileTypes(args: { project_id: string }) {
+    const projectDir = path.join(this.projectManager.getContextRoot(), 'projects', args.project_id);
+    
+    try {
+      // Check if project directory exists
+      await fs.access(projectDir);
+      
+      // Read directory contents
+      const entries = await fs.readdir(projectDir, { withFileTypes: true });
+      
+      // Filter for files, ignore system files, and extract file types (extensions removed)
+      const fileTypes = entries
+        .filter(entry => entry.isFile())
+        .filter(entry => !entry.name.startsWith('.')) // Ignore system/hidden files
+        .map(entry => {
+          const name = entry.name;
+          // Remove .md extension if present, otherwise use full name
+          return name.endsWith('.md') ? name.slice(0, -3) : name;
+        })
+        .sort(); // Sort alphabetically
+      
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify(fileTypes)
+        }]
+      };
+    } catch (error: any) {
+      if (error.code === 'ENOENT') {
+        // Project doesn't exist, return empty array
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify([])
+          }]
+        };
+      } else if (error.code === 'EACCES') {
+        throw new Error('Insufficient permissions to read project directory');
+      }
+      
+      // Re-throw unexpected errors
+      throw error;
+    }
+  }
+  
   private async writeFile(filePath: string, content: string): Promise<void> {
 
     // Extract the project directory from the full file path
