@@ -27,7 +27,9 @@ Project names are one or more words separated by hyphens. For example, "my-proje
 Context files go into projects, and each project has its own context files.
 Context files are named with one or more words separated by hyphens. For example, "mental-model" or "session-summary".
 Context files are used for storing important information between sessions and for you or other AI assistants to quickly come up to date on previous discussions.
-Context files are never for humans so you can write to them in the most efficient ways possible.`,
+Context files are never for humans so you can write to them in the most efficient ways possible.
+
+When working with this server, start by listing projects to discover what's available, then list file types for your chosen project to see what context already exists before reading or updating files.`,
       },
       {
         capabilities: {
@@ -46,7 +48,7 @@ Context files are never for humans so you can write to them in the most efficien
       tools: [
         {
           name: 'list_projects',
-          description: 'List all available projects',
+          description: 'Discover all available projects when starting work. Use this first if you don\'t know which project the user is referring to, or to see all projects available for context management. Always follow up with list_file_types to see what context exists for your chosen project.',
           inputSchema: {
             type: 'object',
             properties: {},
@@ -55,7 +57,7 @@ Context files are never for humans so you can write to them in the most efficien
         },
         {
           name: 'list_file_types',
-          description: 'List all available file types for a project',
+          description: 'Discover what context files exist for a specific project. Use this after selecting a project to see what information is already stored (mental_model, session_summary, features, bugs, etc.) before reading or updating context. This shows you what context types are available so you can retrieve relevant information.',
           inputSchema: {
             type: 'object',
             properties: {
@@ -66,7 +68,7 @@ Context files are never for humans so you can write to them in the most efficien
         },
         {
           name: 'get_context',
-          description: 'Retrieve the context from a file for a project that you or another AI assistant stored for later use.',
+          description: 'Retrieve existing context from a specific file type within a project. Use this to read information that you or another AI assistant previously stored. Always use list_file_types first to see what context files are available for the project.',
           inputSchema: {
             type: 'object',
             properties: {
@@ -81,7 +83,7 @@ Context files are never for humans so you can write to them in the most efficien
         },
         {
           name: 'update_context',
-          description: 'Update a projects context file with with new information you or another agent will want to use later',
+          description: 'Create or completely replace the content of a context file for a project. This overwrites the entire file with new content - it does not append. Use this to store new information or completely update existing context that you or other AI assistants will need later.',
           inputSchema: {
             type: 'object',
             properties: {
