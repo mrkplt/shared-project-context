@@ -3,19 +3,35 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
-import { ProjectManager } from './project/ProjectManager';
-import { ContextMCPServer } from './mcp/ContextMCPServer';
+import * as os from 'os';
+import * as path from 'path';
+
+// Import handlers
+import ListProjectsHandler from './handlers/listProjectsHandler';
+import ListFileTypesHandler from './handlers/listFileTypesHandler';
+import GetContextHandler from './handlers/getContextHandler';
+import AppendContextHandler from './handlers/appendContextHandler';
+import ReplaceContextHandler from './handlers/replaceContextHandler';
+import { FileSystemHelper } from './core/filesystem';
 
 // Main server class that implements the MCP protocol
 class ContextManagerServer {
   private server: Server;
-  private contextMCPServer: ContextMCPServer;
-  private projectManager: ProjectManager;
+  private fsHelper: FileSystemHelper;
+  private contextRoot: string;
+  private listProjectsHandler!: ListProjectsHandler;
+  private listFileTypesHandler!: ListFileTypesHandler;
+  private getContextHandler!: GetContextHandler;
+  private appendContextHandler!: AppendContextHandler;
+  private replaceContextHandler!: ReplaceContextHandler;
 
   constructor() {
-    // Initialize components
-    this.projectManager = new ProjectManager;
-    this.contextMCPServer = new ContextMCPServer(this.projectManager);
+    // Initialize filesystem helper
+    this.fsHelper = new FileSystemHelper();
+    this.contextRoot = path.join(os.homedir(), '.shared-project-context');
+    
+    // Initialize handlers
+    this.initializeHandlers();
     
     // Initialize MCP server with proper configuration
     this.server = new Server(
@@ -42,6 +58,40 @@ When working with this server, start by listing projects to discover what's avai
     
     // Set up request handlers
     this.setupHandlers();
+  }
+  
+  private initializeHandlers(): void {
+    // Create a single filesystem helper to be shared across handlers
+    const fsHelper = this.fsHelper;
+    const contextRoot = this.contextRoot;
+    
+    // Create project handler for project initialization
+    const createProjectHandler = new (require('./handlers/createProjectHandler').default)(contextRoot, fsHelper);
+    
+    // Initialize all handlers with their dependencies
+    this.listProjectsHandler = new ListProjectsHandler(contextRoot, fsHelper);
+    this.listFileTypesHandler = new ListFileTypesHandler(contextRoot, fsHelper);
+    
+    // Create a function to get context file path
+    const getContextFilePath = async (projectId: string, fileType: string): Promise<string> => {
+      const projectPath = path.join(contextRoot, 'projects', projectId);
+      await fsHelper.ensureDirectoryExists(projectPath);
+      return path.join(projectPath, `${fileType}.md`);
+    };
+    
+    // Initialize handlers that need the context file path
+    this.getContextHandler = new GetContextHandler(getContextFilePath, fsHelper);
+    this.appendContextHandler = new AppendContextHandler(
+      getContextFilePath, 
+      fsHelper, 
+      (projectPath: string) => createProjectHandler.initProject(projectPath)
+    );
+    this.replaceContextHandler = new ReplaceContextHandler(
+      contextRoot,
+      getContextFilePath,
+      fsHelper,
+      (projectPath: string) => createProjectHandler.initProject(projectPath)
+    );
   }
   
   private setupHandlers(): void {
@@ -123,29 +173,35 @@ When working with this server, start by listing projects to discover what's avai
       const { params } = request;
       const { name, arguments: args = {} } = params;
       
-      switch (name) {
-        case 'list_file_types':
-          return await this.contextMCPServer.handleListFileTypes(args as { project_id: string });
-        case 'list_projects':
-          return {
-            content: [{
-              type: 'text',
-              text: await this.projectManager.listProjects()
-            }]
-          };
-        case 'get_context':
-          return await this.contextMCPServer.handleGetContext(args as { project_id: string; file_type: string });
-        case 'replace_context':
-          return await this.contextMCPServer.handleReplaceContext(
-            args as { project_id: string; file_type: string; content: string }
-          );
-        case 'append_context':
-          return await this.contextMCPServer.handleAppendContext(
-            args as { project_id: string; file_type: string; content: string }
-          );
-        default:
-          throw new Error(`Unknown tool: ${name}`);
-      }
+        try {
+          switch (name) {
+            case 'list_file_types':
+              return await this.listFileTypesHandler.handle(args as { project_id: string });
+              
+            case 'list_projects':
+              return await this.listProjectsHandler.handle();
+              
+            case 'get_context':
+              return await this.getContextHandler.handle(args as { project_id: string; file_type: string });
+              
+            case 'replace_context':
+              return await this.replaceContextHandler.handle(
+                args as { project_id: string; file_type: string; content: string }
+              );
+              
+            case 'append_context':
+              return await this.appendContextHandler.handle(
+                args as { project_id: string; file_type: string; content: string }
+              );
+              
+            default:
+              throw new Error(`Unknown tool: ${name}`);
+          }
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          console.error(`Error handling tool ${name}:`, errorMessage);
+          throw error;
+        }
     });
   }
   
