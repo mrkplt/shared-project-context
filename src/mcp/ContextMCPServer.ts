@@ -7,6 +7,7 @@ interface FileSystem {
   readFile: (path: string, encoding: BufferEncoding) => Promise<string>;
   writeFile: (path: string, content: string) => Promise<void>;
   mkdir: (path: string, options: { recursive: boolean }) => Promise<void>;
+  appendFile: (path: string, content: string) => Promise<void>;
 }
 
 export class ContextMCPServer {
@@ -39,6 +40,15 @@ export class ContextMCPServer {
         const fs = await import('fs/promises');
         return fs.writeFile(p, content, 'utf-8');
       }),
+      appendFile: fileSystem?.appendFile || (async (p, content) => {
+        // For testing, we'll use the mocked version from jest
+        if (process.env.NODE_ENV === 'test') {
+          const fs = require('fs/promises');
+          return fs.appendFile(p, content, 'utf-8');
+        }
+        const fs = await import('fs/promises');
+        return fs.appendFile(p, content, 'utf-8');
+      }),
       mkdir: fileSystem?.mkdir || (async (p: string, options: { recursive: boolean }) => {
         // For testing, we'll use the mocked version from jest
         if (process.env.NODE_ENV === 'test') {
@@ -50,9 +60,6 @@ export class ContextMCPServer {
       })
     };
   }
-
-  // No need for explicit server setup as we're using the main server instance
-  // from the ContextManagerServer class
 
   async handleGetContext(args: { project_id: string; file_type: string }) {
     const filePath = await this.projectManager.getContextFilePath(args.project_id, args.file_type);
@@ -88,6 +95,34 @@ export class ContextMCPServer {
         text: 'File updated successfully'
       }]
     };
+  }
+
+  async handleAppendContext(args: {
+    project_id: string;
+    file_type: string;
+    content: string;
+  }) {
+    try {
+      const filePath = await this.projectManager.getContextFilePath(args.project_id, args.file_type);
+      
+      // Ensure project directory exists
+      const projectDir = path.dirname(filePath);
+      await this.projectManager.initProject(projectDir);
+      
+      // Simply append with consistent spacing
+      const contentToAppend = '\n\n' + args.content;
+      await this.fs.appendFile(filePath, contentToAppend);
+      
+      return {
+        content: [{
+          type: 'text',
+          text: 'Content appended successfully'
+        }]
+      };
+      
+    } catch (error) {
+      throw new Error(`Failed to append context: ${(error as Error).message}`);
+    }
   }
 
   private async readFile(filePath: string): Promise<string> {

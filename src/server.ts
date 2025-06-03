@@ -28,7 +28,9 @@ Context files go into projects, and each project has its own context files.
 Context files are named with one or more words separated by hyphens. For example, "mental-model" or "session-summary".
 Context files are used for storing important information between sessions and for you or other AI assistants to quickly come up to date on previous discussions.
 Context files are never for humans so you can write to them in the most efficient ways possible.
+Context files should be kept concise and focused to conserve agent context.
 
+You should refresh your context if some time has passed since you last used this server.
 When working with this server, start by listing projects to discover what's available, then list file types for your chosen project to see what context already exists before reading or updating files.`,
       },
       {
@@ -82,8 +84,24 @@ When working with this server, start by listing projects to discover what's avai
           }
         },
         {
-          name: 'update_context',
+          name: 'replace_context',
           description: 'Create or completely replace the content of a context file for a project. This overwrites the entire file with new content - it does not append. Use this to store new information or completely update existing context that you or other AI assistants will need later.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              project_id: { type: 'string' },
+              file_type: { 
+                type: 'string', 
+                // enum: ['mental_model', 'session_summary', 'bugs', 'features'] 
+              },
+              content: { type: 'string' }
+            },
+            required: ['project_id', 'file_type', 'content']
+          }
+        },
+        {
+          name: 'append_context',
+          description: 'Add new content to an existing context file without replacing what\'s already there. This adds content to the end of the file with proper spacing. Use this to incrementally build up context over time, such as adding new session notes, additional features to a list, or extending documentation. If the file doesn\'t exist, it will be created with the new content.',
           inputSchema: {
             type: 'object',
             properties: {
@@ -121,7 +139,10 @@ When working with this server, start by listing projects to discover what's avai
           return await this.contextMCPServer.handleUpdateContext(
             args as { project_id: string; file_type: string; content: string }
           );
-          
+        case 'append_context':
+          return await this.contextMCPServer.handleAppendContext(
+            args as { project_id: string; file_type: string; content: string }
+          );
         default:
           throw new Error(`Unknown tool: ${name}`);
       }
