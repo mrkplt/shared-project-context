@@ -73,7 +73,7 @@ export class ContextMCPServer {
     };
   }
   
-  async handleUpdateContext(args: {
+  async handleReplaceContext(args: {
     project_id: string;
     file_type: string;
     content: string;

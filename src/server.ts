@@ -85,7 +85,7 @@ When working with this server, start by listing projects to discover what's avai
         },
         {
           name: 'replace_context',
-          description: 'Create or completely replace the content of a context file for a project. This overwrites the entire file with new content - it does not append. Use this to store new information or completely update existing context that you or other AI assistants will need later.',
+          description: 'Create or completely replace the content of a context file for a project. This overwrites the entire file with new content - it does not append. Use this to store new information or completely replace existing context that you or other AI assistants will need later.',
           inputSchema: {
             type: 'object',
             properties: {
@@ -135,8 +135,8 @@ When working with this server, start by listing projects to discover what's avai
           };
         case 'get_context':
           return await this.contextMCPServer.handleGetContext(args as { project_id: string; file_type: string });
-        case 'update_context':
-          return await this.contextMCPServer.handleUpdateContext(
+        case 'replace_context':
+          return await this.contextMCPServer.handleReplaceContext(
             args as { project_id: string; file_type: string; content: string }
           );
         case 'append_context':
