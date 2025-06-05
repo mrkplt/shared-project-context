@@ -10,8 +10,7 @@ import * as path from 'path';
 import ListProjectsHandler from './handlers/listProjectsHandler';
 import ListFileTypesHandler from './handlers/listFileTypesHandler';
 import GetContextHandler from './handlers/getContextHandler';
-import AppendContextHandler from './handlers/appendContextHandler';
-import ReplaceContextHandler from './handlers/replaceContextHandler';
+import UpdateContextHandler from './handlers/updateContextHandler';
 import { FileSystemHelper } from './handlers/utilities/fileSystem';
 
 // Main server class that implements the MCP protocol
@@ -22,8 +21,7 @@ class ContextManagerServer {
   private listProjectsHandler!: ListProjectsHandler;
   private listFileTypesHandler!: ListFileTypesHandler;
   private getContextHandler!: GetContextHandler;
-  private appendContextHandler!: AppendContextHandler;
-  private replaceContextHandler!: ReplaceContextHandler;
+  private updateContextHandler!: UpdateContextHandler;
 
   constructor() {
     // Initialize filesystem helper
@@ -81,13 +79,7 @@ When working with this server, start by listing projects to discover what's avai
     
     // Initialize handlers that need the context file path
     this.getContextHandler = new GetContextHandler(getContextFilePath, fsHelper);
-    this.appendContextHandler = new AppendContextHandler(
-      getContextFilePath,
-      (projectPath: string) => createProjectHandler.initProject(projectPath)
-    );
-    this.replaceContextHandler = new ReplaceContextHandler(
-      getContextFilePath
-    );
+
   }
   
   private setupHandlers(): void {
@@ -130,24 +122,8 @@ When working with this server, start by listing projects to discover what's avai
           }
         },
         {
-          name: 'replace_context',
-          description: 'Create or completely replace the content of a context file for a project. This overwrites the entire file with new content - it does not append. Use this to store new information or completely replace existing context that you or other AI assistants will need later.',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              project_id: { type: 'string' },
-              file_type: { 
-                type: 'string', 
-                // enum: ['mental_model', 'session_summary', 'bugs', 'features'] 
-              },
-              content: { type: 'string' }
-            },
-            required: ['project_id', 'file_type', 'content']
-          }
-        },
-        {
-          name: 'append_context',
-          description: 'Add new content to an existing context file without replacing what\'s already there. This adds content to the end of the file with proper spacing. Use this to incrementally build up context over time, such as adding new session notes, additional features to a list, or extending documentation. If the file doesn\'t exist, it will be created with the new content.',
+          name: 'update_context',
+          description: 'Update ',
           inputSchema: {
             type: 'object',
             properties: {
@@ -180,14 +156,14 @@ When working with this server, start by listing projects to discover what's avai
             case 'get_context':
               return await this.getContextHandler.handle(args as { project_id: string; file_type: string });
               
-            case 'replace_context':
-              return await this.replaceContextHandler.handle(
-                args as { project_id: string; file_type: string; content: string }
-              );
-              
-            case 'append_context':
-              return await this.appendContextHandler.handle(
-                args as { projectId: string; fileType: string; content: string }
+            case 'update_context':
+              return await this.updateContextHandler.handle(
+                args as { 
+                  project_id: string;
+                  file_type: string;
+                  content: string;
+                  name?: string;
+                }
               );
               
             default:
