@@ -115,4 +115,44 @@ export class FileSystemHelper {
       }
     }
   }
+
+  async moveFile(directory: string, targetPath: string): Promise<void> {
+    try {
+      await this.fs.access(directory);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        await this.fs.mkdir(directory, { recursive: true });
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  async getFileInfo(directory: string): Promise<void> {
+    try {
+      await this.fs.access(directory);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        await this.fs.mkdir(directory, { recursive: true });
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  async archive(directory: string, archivePath: string): Promise<void> {
+    try {
+      await this.fs.access(directory);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        await this.fs.mkdir(directory, { recursive: true });
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  async listDirectory(directory: string): Promise<Dirent[]> {
+    return this.fs.readdir(directory, { withFileTypes: true });
+  }
 }

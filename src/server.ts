@@ -82,15 +82,11 @@ When working with this server, start by listing projects to discover what's avai
     // Initialize handlers that need the context file path
     this.getContextHandler = new GetContextHandler(getContextFilePath, fsHelper);
     this.appendContextHandler = new AppendContextHandler(
-      getContextFilePath, 
-      fsHelper, 
+      getContextFilePath,
       (projectPath: string) => createProjectHandler.initProject(projectPath)
     );
     this.replaceContextHandler = new ReplaceContextHandler(
-      contextRoot,
-      getContextFilePath,
-      fsHelper,
-      (projectPath: string) => createProjectHandler.initProject(projectPath)
+      getContextFilePath
     );
   }
   
@@ -191,7 +187,7 @@ When working with this server, start by listing projects to discover what's avai
               
             case 'append_context':
               return await this.appendContextHandler.handle(
-                args as { project_id: string; file_type: string; content: string }
+                args as { projectId: string; fileType: string; content: string }
               );
               
             default:

@@ -1,5 +1,5 @@
-import * as path from 'path';
 import { FileSystemHelper } from './utilities/fileSystem';
+import { ContextTypeFactory } from './context_types/contexTypeFactory';
 
 interface ReplaceContextArgs {
   project_id: string;
@@ -14,21 +14,22 @@ interface ContentItem {
 
 class ReplaceContextHandler {
   constructor(
-    private contextRoot: string,
-    private getContextFilePath: (projectId: string, fileType: string) => Promise<string>,
-    private fsHelper: FileSystemHelper = new FileSystemHelper(),
-    private createProject: (projectPath: string) => Promise<string>
+    private getContextFilePath: (projectId: string, fileType: string) => Promise<string>
   ) {}
 
   async handle(args: ReplaceContextArgs): Promise<{ content: ContentItem[] }> {
+    const contextType = ContextTypeFactory({
+      projectName: args.project_id,
+      persistenceHelper: new FileSystemHelper(),
+      contextType: args.file_type
+    });
     try {
       // First initialize the project if it doesn't exist
-      const projectDir = path.join(this.contextRoot, 'projects', args.project_id);
-      await this.createProject(projectDir);
+
       
       // Now get the file path and write the content
       const filePath = await this.getContextFilePath(args.project_id, args.file_type);
-      await this.fsHelper.writeFile(filePath, args.content);
+      await contextType.persistenceHelper.writeFile(filePath, args.content);
       
       return {
         content: [{

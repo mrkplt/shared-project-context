@@ -1,4 +1,5 @@
-   
+   import { FileSystemHelper } from "./handlers/utilities/fileSystem";
+
    // Validation Response Types
    export interface ValidationResponse {
     isValid: boolean;
@@ -25,11 +26,8 @@
     read(name?: string): Promise<PersistenceResponse>;
     reset(name?: string): Promise<PersistenceResponse>;
     validate(content: string): ValidationResponse;
+    persistenceHelper: FileSystemHelper;
    }
-
-   // Content Type Registry
-   export type CoreContextType = 'session_summary' | 'mental_model' | 'features' | 'other';
-
 
 //    {validationErrors: [{
 // },

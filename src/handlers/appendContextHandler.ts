@@ -1,9 +1,10 @@
 import * as path from 'path';
+import  { ContextTypeFactory } from './context_types/contexTypeFactory';
 import { FileSystemHelper } from './utilities/fileSystem';
 
 interface AppendContextArgs {
-  project_id: string;
-  file_type: string;
+  projectId: string;
+  fileType: string;
   content: string;
 }
 
@@ -15,13 +16,18 @@ interface ContentItem {
 class AppendContextHandler {
   constructor(
     private getContextFilePath: (projectId: string, fileType: string) => Promise<string>,
-    private fsHelper: FileSystemHelper = new FileSystemHelper(),
     private createProject: (projectPath: string) => Promise<string>
   ) {}
 
   async handle(args: AppendContextArgs): Promise<{ content: ContentItem[] }> {
+    const contextType = ContextTypeFactory({
+      projectName: args.projectId,
+      persistenceHelper: new FileSystemHelper(),
+      contextType: args.fileType
+    });
+
     try {
-      const filePath = await this.getContextFilePath(args.project_id, args.file_type);
+      const filePath = await this.getContextFilePath(args.projectId, args.fileType);
       
       // Ensure project directory exists
       const projectDir = path.dirname(filePath);
@@ -29,7 +35,7 @@ class AppendContextHandler {
       
       // Simply append with consistent spacing
       const contentToAppend = '\n\n' + args.content;
-      await this.fsHelper.appendFile(filePath, contentToAppend);
+      await contextType.persistenceHelper.appendFile(filePath, contentToAppend);
       
       return {
         content: [{

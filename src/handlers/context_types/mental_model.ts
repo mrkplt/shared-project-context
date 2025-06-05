@@ -1,12 +1,16 @@
 import { ValidationResponse, ContextType, PersistenceResponse, ReadResponse } from '../../types.js';
+import { FileSystemHelper } from '../utilities/fileSystem.js';
 
 export class MentalModelType implements ContextType {
   private readonly fileName = 'mental_model.md';
+  persistenceHelper: FileSystemHelper;
 
   constructor(
     private projectName: string,
-    private persistenceHelper: any, // Your existing FileSystemHelper,
-  ) {}
+    persistenceHelper: FileSystemHelper, // Your existing FileSystemHelper,
+  ) {
+    this.persistenceHelper = persistenceHelper;
+  }
 
   private validateName(name?: string): ValidationResponse {
     if (name && name !== 'mental_model') {

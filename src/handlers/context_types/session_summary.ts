@@ -1,14 +1,18 @@
 import { ValidationResponse, ContextType, PersistenceResponse, ReadResponse } from '../../types.js';
 import { Dirent } from 'fs';
+import { FileSystemHelper } from '../utilities/fileSystem.js';
 
 export class SessionSummaryType implements ContextType {
   private readonly directoryName = 'session_summary';
   private readonly archiveBasePath = 'archives/session_summary';
+  persistenceHelper: FileSystemHelper;
 
   constructor(
     private projectName: string,
-    private persistenceHelper: any, // Your existing FileSystemHelper,
-  ) {}
+    persistenceHelper: FileSystemHelper, // Your existing FileSystemHelper,
+  ) {
+    this.persistenceHelper = persistenceHelper;
+  }
 
   private getSessionSummaryDir(): string {
     return `${this.projectName}/${this.directoryName}`;

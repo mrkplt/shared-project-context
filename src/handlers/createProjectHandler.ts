@@ -1,14 +1,18 @@
 import * as path from 'path';
 import { FileSystemHelper } from './utilities/fileSystem';
 
+interface CreateProjectArgs {
+    projectPath: string;
+}
+
 class CreateProjectHandler {
   constructor(
     private contextRoot: string,
     private fsHelper: FileSystemHelper = new FileSystemHelper()
   ) {}
 
-  async initProject(projectPath: string): Promise<string> {
-    const projectId = path.basename(projectPath);
+  async initProject(args: CreateProjectArgs): Promise<string> {
+    const projectId = path.basename(args.projectPath);
     const contextPath = path.join(this.contextRoot, 'projects', projectId);
 
     try {

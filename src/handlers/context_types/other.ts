@@ -1,13 +1,33 @@
 import { ValidationResponse, ContextType, PersistenceResponse, ReadResponse } from '../../types.js';
+import { FileSystemHelper } from '../utilities/fileSystem.js';
 
 export class OtherType implements ContextType {
+  public persistenceHelper: FileSystemHelper;
+
   constructor(
     private projectName: string,
-    private persistenceHelper: any, // Your existing FileSystemHelper,
-  ) {}
+    persistenceHelper: FileSystemHelper,
+  ) {
+    this.persistenceHelper = persistenceHelper;
+  }
 
-  async update(name: string, content: string): Promise<PersistenceResponse> {
+  async update(content: string, name?: string): Promise<PersistenceResponse> {
+    if (!name) {
+      return {
+        success: false,
+        error: 'Name parameter is required for other type'
+      };
+    }
+
     // Add Validation Behavior here that sets ValidationResponse
+    const validation = this.validate(content);
+    if (!validation.isValid) {
+      return {
+        success: false,
+        validation,
+        error: 'Content validation failed'
+      };
+    }
 
     // this should create a other directory and persist to that.
     // This is actually a file system implemnentation detail but 
@@ -18,7 +38,8 @@ export class OtherType implements ContextType {
     try {
       await this.persistenceHelper.writeFile(filePath, content);
       return {
-        success: true
+        success: true,
+        validation
       };
     } catch (error) {
       return {
@@ -28,29 +49,38 @@ export class OtherType implements ContextType {
     }
   }
 
-  async read(name: string): Promise<ReadResponse> {
+  async read(name?: string): Promise<PersistenceResponse> {
+    if (!name) {
+      return {
+        success: false,
+        error: 'Name parameter is required for other type'
+      };
+    }
+
     const filename = `other_${name}.md`;
     const filePath = `${this.projectName}/${filename}`;
-    let content: string = ``;
 
     try {
-      content = await this.persistenceHelper.readFile(filePath);
+      const content = await this.persistenceHelper.readFile(filePath);
+      return {
+        success: true
+      };
     } catch (error) {
-      if (error instanceof Error) {
-        return {
-          success: false,
-          content: content,
-          error: `Failed to read file: ${error instanceof Error ? error.message : 'Unknown error'}`
-        };
-      }
+      return {
+        success: false,
+        error: `Failed to read file: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
     }
-    return {
-      success: true,
-      content: content
-    };
   }
 
-  async reset(name: string): Promise<PersistenceResponse> {
+  async reset(name?: string): Promise<PersistenceResponse> {
+    if (!name) {
+      return {
+        success: false,
+        error: 'Name parameter is required for other type'
+      };
+    }
+
     const filename = `other_${name}.md`;
     const filePath = `${this.projectName}/${filename}`;
     
@@ -80,22 +110,23 @@ export class OtherType implements ContextType {
   }
 
   validate(content: string): ValidationResponse {
-   // Minimal validation for other type
-  const trimmedContent = content.trim();
-   
-  if (trimmedContent.length === 0) {
-    return {
-      isValid: false,
-      validationErrors: [
-      'insufficient_content', 'Content cannot be empty', 'error'],
-      correctionGuidance:
-      [
+    // Minimal validation for other type
+    const trimmedContent = content.trim();
+     
+    if (trimmedContent.length === 0) {
+      return {
+        isValid: false,
+        validationErrors: [
+          'insufficient_content', 'Content cannot be empty', 'error'
+        ],
+        correctionGuidance: [
           '1. Add meaningful content to your file',
           '2. Include relevant information for your use case',
           '3. Ensure content is not just whitespace'
         ]
-      }
-    };
+      };
+    }
+    
     return { isValid: true };
   }
 }

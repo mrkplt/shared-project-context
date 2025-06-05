@@ -1,4 +1,5 @@
 import { FileSystemHelper } from './utilities/fileSystem';
+import { ContextTypeFactory } from './context_types/contexTypeFactory';
 
 interface GetContextArgs {
   project_id: string;
@@ -17,9 +18,14 @@ class GetContextHandler {
   ) {}
 
   async handle(args: GetContextArgs): Promise<{ content: ContentItem[] }> {
+    const contextType = ContextTypeFactory({
+      projectName: args.project_id,
+      persistenceHelper: this.fsHelper,
+      contextType: args.file_type
+    });
     try {
       const filePath = await this.getContextFilePath(args.project_id, args.file_type);
-      const content = await this.fsHelper.readFile(filePath);
+      const content = await contextType.persistenceHelper.readFile(filePath);
       
       return {
         content: [{
