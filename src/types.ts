@@ -7,6 +7,11 @@
     correctionGuidance?: string[];
    }
 
+   export interface ContentItem {
+     type: string;
+     text: string;
+   }
+
    export interface PersistenceResponse {   
     success: boolean;
     validation?: ValidationResponse;

@@ -1,23 +1,18 @@
 import * as path from 'path';
 import { FileSystemHelper } from './utilities/fileSystem';
+import { ContentItem } from '../types';
 
 interface ListFileTypesArgs {
   project_id: string;
 }
 
-interface ContentItem {
-  type: string;
-  text: string;
-}
-
 class ListFileTypesHandler {
   constructor(
-    private contextRoot: string,
-    private fsHelper: FileSystemHelper = new FileSystemHelper()
+    private fsHelper: FileSystemHelper,
   ) {}
 
   async handle(args: ListFileTypesArgs): Promise<{ content: ContentItem[] }> {
-    const projectDir = path.join(this.contextRoot, 'projects', args.project_id);
+    const projectDir = path.join(this.fsHelper.contextRoot, 'projects', args.project_id);
     
     try {
       // Ensure project directory exists

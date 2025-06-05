@@ -1,30 +1,25 @@
 import { FileSystemHelper } from './utilities/fileSystem';
 import { ContextTypeFactory } from './context_types/contexTypeFactory';
+import { ContentItem } from '../types';
 
 interface GetContextArgs {
-  project_id: string;
-  file_type: string;
-}
-
-interface ContentItem {
-  type: string;
-  text: string;
+  projectId: string;
+  fileType: string;
 }
 
 class GetContextHandler {
   constructor(
-    private getContextFilePath: (projectId: string, fileType: string) => Promise<string>,
-    private fsHelper: FileSystemHelper = new FileSystemHelper()
+    private fsHelper: FileSystemHelper
   ) {}
 
   async handle(args: GetContextArgs): Promise<{ content: ContentItem[] }> {
     const contextType = ContextTypeFactory({
-      projectName: args.project_id,
+      projectName: args.projectId,
       persistenceHelper: this.fsHelper,
-      contextType: args.file_type
+      contextType: args.fileType
     });
     try {
-      const filePath = await this.getContextFilePath(args.project_id, args.file_type);
+      const filePath = await this.fsHelper.getContextFilePath(args.projectId, args.fileType);
       const content = await contextType.persistenceHelper.readFile(filePath);
       
       return {

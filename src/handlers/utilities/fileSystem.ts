@@ -1,4 +1,6 @@
 import { Dirent } from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 
 export interface FileSystem {
   readFile: (path: string, encoding: BufferEncoding) => Promise<string>;
@@ -66,7 +68,14 @@ export const defaultFileSystem: FileSystem = {
 };
 
 export class FileSystemHelper {
-  constructor(private fs: FileSystem = defaultFileSystem) {}
+  contextRoot: string;
+  
+  constructor(
+    private fs: FileSystem = defaultFileSystem,
+    contextRoot: string = path.join(os.homedir(), '.shared-project-context')
+  ) {
+    this.contextRoot = contextRoot;
+  }
   
   async readFile(filePath: string): Promise<string> {
     try {
@@ -155,4 +164,29 @@ export class FileSystemHelper {
   async listDirectory(directory: string): Promise<Dirent[]> {
     return this.fs.readdir(directory, { withFileTypes: true });
   }
+
+  async getProjectPath(projectId: string): Promise<string> {
+    return path.join(this.contextRoot, 'projects', projectId);
+  }
+
+  async getContextFilePath(projectId: string, fileType: string, name?: string): Promise<string> {
+    const projectPath = await this.getProjectPath(projectId)
+    await this.ensureDirectoryExists(projectPath);
+
+    switch (fileType) {
+      case 'session_summary':
+        return path.join(projectPath, fileType, `${name}.md`);
+      case 'other':
+        return path.join(projectPath, fileType, `${name}.md`);
+      case 'mental_model':
+        return path.join(projectPath, `${fileType}.md`);
+      case 'features':
+        return path.join(projectPath, `${fileType}.md`);
+      default:
+        throw new Error('Invalid file type');
+    }
+  };
+
+
+
 }

@@ -1,46 +1,36 @@
 import { FileSystemHelper } from './utilities/fileSystem';
 import { ContextTypeFactory } from './context_types/contexTypeFactory';
-import * as path from 'path';
+import { ContentItem } from '../types';
 
 interface UpdateContextArgs {
-  project_id: string;
-  file_type: string;
+  projectId: string;
+  fileType: string;
   content: string;
   name?: string; // For 'other' type files
 }
 
-interface ContentItem {
-  type: string;
-  text: string;
-}
-
 class UpdateContextHandler {
   constructor(
-    private getContextFilePath: (projectId: string, fileType: string, name?: string) => Promise<string>,
-    private createProject: (projectPath: string) => Promise<void> = async () => {}
+    private fsHelper: FileSystemHelper 
   ) {}
 
   async handle(args: UpdateContextArgs): Promise<{ content: ContentItem[] }> {
     // Validate file_type for 'other' requires a name
-    if (args.file_type === 'other' && !args.name) {
+    if (args.fileType === 'other' && !args.name) {
       throw new Error('File name is required for type "other"');
     }
 
     const contextType = ContextTypeFactory({
-      projectName: args.project_id,
-      persistenceHelper: new FileSystemHelper(),
-      contextType: args.file_type
+      projectName: args.projectId,
+      persistenceHelper: this.fsHelper,
+      contextType: args.fileType
     });
 
     try {
-      const filePath = await this.getContextFilePath(args.project_id, args.file_type, args.name);
-      const projectDir = path.dirname(filePath);
-      
-      // Ensure project directory exists
-      await this.createProject(projectDir);
+      const filePath = await this.fsHelper.getContextFilePath(args.projectId, args.fileType, args.name);
 
       // Determine write behavior based on file type
-      if (args.file_type === 'session_summary') {
+      if (args.fileType === 'session_summary') {
         // For session_summary, append with timestamp
         const timestampedContent = `\n\n## ${new Date().toISOString()}\n${args.content}`;
         await contextType.persistenceHelper.appendFile(filePath, timestampedContent);

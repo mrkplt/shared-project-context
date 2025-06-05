@@ -1,23 +1,31 @@
+import * as os from 'os';
 import * as path from 'path';
+import { ContentItem } from '../types';
 import { FileSystemHelper } from './utilities/fileSystem';
 
 interface CreateProjectArgs {
-    projectPath: string;
+    projectId: string;
 }
 
 class CreateProjectHandler {
   constructor(
-    private contextRoot: string,
-    private fsHelper: FileSystemHelper = new FileSystemHelper()
+    private fsHelper: FileSystemHelper = new FileSystemHelper(),
+    private contextRoot: string = path.join(os.homedir(), '.shared-project-context'),
+
   ) {}
 
-  async initProject(args: CreateProjectArgs): Promise<string> {
-    const projectId = path.basename(args.projectPath);
+  async handle(args: CreateProjectArgs): Promise<{ content: ContentItem[] }> {
+    const projectId = path.basename(args.projectId);
     const contextPath = path.join(this.contextRoot, 'projects', projectId);
 
     try {
       await this.fsHelper.ensureDirectoryExists(contextPath);
-      return projectId;
+      return {
+        content: [{
+          type: 'text',
+          text: 'Project initialized successfully'
+        }]
+      };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       throw new Error(`Failed to initialize project: ${errorMessage}`);
