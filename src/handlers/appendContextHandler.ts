@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { FileSystemHelper } from '../core/filesystem';
+import { FileSystemHelper } from './utilities/fileSystem';
 
 interface AppendContextArgs {
   project_id: string;

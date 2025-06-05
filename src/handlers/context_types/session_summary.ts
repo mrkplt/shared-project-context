@@ -1,4 +1,4 @@
-import { ValidationResponse, ContextType, PersistenceResponse, ReadResponse } from '../types.js';
+import { ValidationResponse, ContextType, PersistenceResponse, ReadResponse } from '../../types.js';
 import { Dirent } from 'fs';
 
 export class SessionSummaryType implements ContextType {

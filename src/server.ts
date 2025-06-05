@@ -12,7 +12,7 @@ import ListFileTypesHandler from './handlers/listFileTypesHandler';
 import GetContextHandler from './handlers/getContextHandler';
 import AppendContextHandler from './handlers/appendContextHandler';
 import ReplaceContextHandler from './handlers/replaceContextHandler';
-import { FileSystemHelper } from './core/filesystem';
+import { FileSystemHelper } from './handlers/utilities/fileSystem';
 
 // Main server class that implements the MCP protocol
 class ContextManagerServer {

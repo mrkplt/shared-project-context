@@ -1,7 +1,7 @@
-import { ValidationResponse, ContextType, PersistenceResponse, ReadResponse } from '../types.js';
+import { ValidationResponse, ContextType, PersistenceResponse, ReadResponse } from '../../types.js';
 
-export class FeaturesType implements ContextType {
-  private readonly fileName = 'features.md';
+export class MentalModelType implements ContextType {
+  private readonly fileName = 'mental_model.md';
 
   constructor(
     private projectName: string,
@@ -9,13 +9,13 @@ export class FeaturesType implements ContextType {
   ) {}
 
   private validateName(name?: string): ValidationResponse {
-    if (name && name !== 'features') {
+    if (name && name !== 'mental_model') {
       return {
         isValid: false,
-        validationErrors: ['invalid_name', 'If provided, name must be "features"', 'error'],
+        validationErrors: ['invalid_name', 'If provided, name must be "mental_model"'],
         correctionGuidance: [
           '1. Remove the name parameter, or',
-          '2. Set the name parameter to "features"'
+          '2. Set the name parameter to "mental_model"'
         ]
       };
     }
@@ -114,8 +114,8 @@ export class FeaturesType implements ContextType {
           'error'
         ],
         correctionGuidance: [
-          '1. Add a description of the features',
-          '2. Include relevant details about functionality',
+          '1. Add a description of the mental model',
+          '2. Include relevant concepts and relationships',
           '3. Ensure content is not just whitespace'
         ]
       };

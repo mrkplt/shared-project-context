@@ -1,6 +1,6 @@
 import * as os from 'os';
 import * as path from 'path';
-import { FileSystemHelper } from '../core/filesystem';
+import { FileSystemHelper } from './utilities/fileSystem';
 import { Dirent } from 'fs';
 
 interface ContentItem {

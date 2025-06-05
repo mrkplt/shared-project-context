@@ -1,4 +1,4 @@
-import { FileSystemHelper } from '../core/filesystem';
+import { FileSystemHelper } from './utilities/fileSystem';
 
 interface GetContextArgs {
   project_id: string;
