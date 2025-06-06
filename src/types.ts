@@ -1,15 +1,17 @@
    import { FileSystemHelper } from "./handlers/utilities/fileSystem";
 
+   //Used in Handlers
+   export interface ContentItem {
+    type: string;
+    text: string;
+  }
+
+  // Used in Context Types
    // Validation Response Types
    export interface ValidationResponse {
     isValid: boolean;
     validationErrors?: string[];
     correctionGuidance?: string[];
-   }
-
-   export interface ContentItem {
-     type: string;
-     text: string;
    }
 
    export interface PersistenceResponse {   
@@ -21,9 +23,9 @@
 
    // Context Type Interface
    export interface ContextType {
-    update(content: string, name?: string): Promise<PersistenceResponse>;
-    read(name?: string): Promise<PersistenceResponse>;
-    reset(name?: string): Promise<PersistenceResponse>;
+    update(content: string): Promise<PersistenceResponse>;
+    read(): Promise<PersistenceResponse>;
+    reset(): Promise<PersistenceResponse>;
     validate(content: string): ValidationResponse;
     persistenceHelper: FileSystemHelper;
    }

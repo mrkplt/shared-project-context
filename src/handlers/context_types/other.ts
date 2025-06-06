@@ -6,6 +6,7 @@ export class OtherType implements ContextType {
   
   public readonly persistenceHelper: FileSystemHelper;
   private readonly projectName: string;
+  private readonly fileName: string;
 
   /**
    * Creates a new OtherType instance for handling arbitrary file types
@@ -13,28 +14,16 @@ export class OtherType implements ContextType {
    * @param persistenceHelper - Helper for file system operations
    */
   constructor(
+    persistenceHelper: FileSystemHelper,
     projectName: string,
-    persistenceHelper: FileSystemHelper
+    fileName: string
   ) {
-    this.projectName = projectName;
     this.persistenceHelper = persistenceHelper;
+    this.projectName = projectName;
+    this.fileName = fileName;
   }
 
-  async update(name: string | undefined, content: string): Promise<PersistenceResponse> {
-    if (!name) {
-      return {
-        success: false,
-        error: 'Name parameter is required for other type',
-        validation: {
-          isValid: false,
-          validationErrors: ['missing_name', 'Name parameter is required', 'error'],
-          correctionGuidance: [
-            '1. Provide a name parameter for the file'
-          ]
-        }
-      };
-    }
-
+  async update(content: string): Promise<PersistenceResponse> {
     // Add Validation Behavior here that sets ValidationResponse
     const validation = this.validate(content);
     if (!validation.isValid) {
@@ -46,7 +35,7 @@ export class OtherType implements ContextType {
     }
 
     // Construct the filename with the 'other_' prefix
-    const filename = `${OtherType.FILE_PREFIX}${name}.md`;
+    const filename = `${OtherType.FILE_PREFIX}${this.fileName}.md`;
     const filePath = `${this.projectName}/${filename}`;
     
     try {
@@ -63,22 +52,8 @@ export class OtherType implements ContextType {
     }
   }
 
-  async read(name: string | undefined): Promise<PersistenceResponse> {
-    if (!name) {
-      return {
-        success: false,
-        error: 'Name parameter is required for other type',
-        validation: {
-          isValid: false,
-          validationErrors: ['missing_name', 'Name parameter is required', 'error'],
-          correctionGuidance: [
-            '1. Provide a name parameter for the file'
-          ]
-        }
-      };
-    }
-
-    const filename = `other_${name}.md`;
+  async read(): Promise<PersistenceResponse> {
+    const filename = `other_${this.fileName}.md`;
     const filePath = `${this.projectName}/${filename}`;
 
     try {

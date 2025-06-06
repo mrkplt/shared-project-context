@@ -3,62 +3,32 @@ import { Dirent } from 'fs';
 import { FileSystemHelper } from '../utilities/fileSystem.js';
 
 export class SessionSummaryType implements ContextType {
-  private static readonly DEFAULT_FILE_NAME = 'session_summary.md';
+  private static readonly DEFAULT_FILE_NAME = 'session_summary';
   private readonly directoryName = 'session_summary';
   private readonly archiveBasePath = 'archives/session_summary';
-  
   public readonly persistenceHelper: FileSystemHelper;
   private readonly projectName: string;
   private readonly fileName: string;
+  private validationResponse: ValidationResponse; 
 
-  /**
-   * Creates a new SessionSummaryType instance
-   * @param projectName - Name of the project this context belongs to
-   * @param persistenceHelper - Helper for file system operations
-   * @param options - Optional configuration
-   * @param options.fileName - Custom file name (defaults to 'session_summary.md')
-   */
   constructor(
-    projectName: string,
     persistenceHelper: FileSystemHelper,
-    options: { fileName?: string } = {}
+    projectName: string,
+    fileName?: string
   ) {
-    this.projectName = projectName;
     this.persistenceHelper = persistenceHelper;
-    this.fileName = options.fileName || SessionSummaryType.DEFAULT_FILE_NAME;
+    this.projectName = projectName;
+    this.fileName = SessionSummaryType.DEFAULT_FILE_NAME || fileName;  // Disregard fileName if provided
+    this.validationResponse = {
+      isValid: false,
+      validationErrors: [],
+      correctionGuidance: []
+    };
   }
 
-  private getSessionSummaryDir(): string {
-    return `${this.projectName}/${this.directoryName}`;
-  }
-
-  private generateTimestampedFileName(): string {
-    // ISO string with millisecond precision, no timezone
-    const now = new Date();
-    const isoString = now.toISOString();
-    // Remove timezone and colons from time
-    return `${isoString.replace(/\.\d+Z$/, '').replace(/[:.]/g, '-')}.md`;
-  }
-
-  async update(name: string | undefined, content: string): Promise<PersistenceResponse> {
-    if (name && name !== 'session_summary') {
-      return {
-        success: false,
-        error: 'If provided, name must be "session_summary"',
-        validation: {
-          isValid: false,
-          validationErrors: ['invalid_name', 'If provided, name must be "session_summary"', 'error'],
-          correctionGuidance: [
-            '1. Remove the name parameter, or',
-            '2. Set the name parameter to "session_summary"'
-          ]
-        }
-      };
-    }
-
+  async update(content: string): Promise<PersistenceResponse> {
     // Ensure session_summary directory exists
     const sessionSummaryDir = this.getSessionSummaryDir();
-    
     try {
       await this.persistenceHelper.ensureDirectoryExists(sessionSummaryDir);
       
@@ -72,7 +42,8 @@ export class SessionSummaryType implements ContextType {
     } catch (error) {
       return {
         success: false,
-        error: `Failed to write session summary: ${error instanceof Error ? error.message : 'Unknown error'}`
+        error: `Failed to write session summary: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        validation: this.validationResponse
       };
     }
   }
@@ -184,5 +155,17 @@ export class SessionSummaryType implements ContextType {
     }
     
     return { isValid: true };
+  }
+
+  private getSessionSummaryDir(): string {
+    return `${this.projectName}/${this.directoryName}`;
+  }
+
+  private generateTimestampedFileName(): string {
+    // ISO string with millisecond precision, no timezone
+    const now = new Date();
+    const isoString = now.toISOString();
+    // Remove timezone and colons from time
+    return `${this.fileName}-${isoString.replace(/\.\d+Z$/, '').replace(/[:.]/g, '-')}.md`;
   }
 }

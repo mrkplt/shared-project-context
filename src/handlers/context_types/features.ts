@@ -2,52 +2,23 @@ import { ValidationResponse, ContextType, PersistenceResponse } from '../../type
 import { FileSystemHelper } from '../utilities/fileSystem.js';
 
 export class FeaturesType implements ContextType {
-  private static readonly DEFAULT_FILE_NAME = 'features.md';
+  private static readonly DEFAULT_FILE_NAME = 'features';
   
   public readonly persistenceHelper: FileSystemHelper;
   private readonly projectName: string;
   private readonly fileName: string;
 
-  /**
-   * Creates a new FeaturesType instance
-   * @param projectName - Name of the project this context belongs to
-   * @param persistenceHelper - Helper for file system operations
-   * @param options - Optional configuration
-   * @param options.fileName - Custom file name (defaults to 'features.md')
-   */
   constructor(
-    projectName: string,
     persistenceHelper: FileSystemHelper,
-    options: { fileName?: string } = {}
+    projectName: string,
+    fileName?: string
   ) {
-    this.projectName = projectName;
     this.persistenceHelper = persistenceHelper;
-    this.fileName = options.fileName || FeaturesType.DEFAULT_FILE_NAME;
+    this.projectName = projectName;
+    this.fileName = FeaturesType.DEFAULT_FILE_NAME || fileName; // Disregard fileName if provided
   }
 
-  private validateName(name?: string): ValidationResponse {
-    if (name && name !== 'features') {
-      return {
-        isValid: false,
-        validationErrors: ['invalid_name', 'If provided, name must be "features"', 'error'],
-        correctionGuidance: [
-          '1. Remove the name parameter, or',
-          '2. Set the name parameter to "features"'
-        ]
-      };
-    }
-    return { isValid: true };
-  }
-
-  async update(_name: string | undefined, content: string): Promise<PersistenceResponse> {
-    const nameValidation = this.validateName(_name);
-    if (!nameValidation.isValid) {
-      return {
-        success: false,
-        error: nameValidation.validationErrors?.join(' - ') || 'Invalid name parameter'
-      };
-    }
-    
+  async update(content: string): Promise<PersistenceResponse> {
     const filePath = `${this.projectName}/${this.fileName}`;
     
     try {
@@ -61,16 +32,7 @@ export class FeaturesType implements ContextType {
     }
   }
 
-  async read(_name?: string): Promise<PersistenceResponse> {
-    const nameValidation = this.validateName(_name);
-    if (!nameValidation.isValid) {
-      return {
-        success: false,
-        content: '',
-        error: nameValidation.validationErrors?.join(' - ') || 'Invalid name parameter'
-      };
-    }
-    
+  async read(): Promise<PersistenceResponse> {
     const filePath = `${this.projectName}/${this.fileName}`;
     
     try {
@@ -85,15 +47,7 @@ export class FeaturesType implements ContextType {
     }
   }
 
-  async reset(_name?: string): Promise<PersistenceResponse> {
-    const nameValidation = this.validateName(_name);
-    if (!nameValidation.isValid) {
-      return {
-        success: false,
-        error: nameValidation.validationErrors?.join(' - ') || 'Invalid name parameter'
-      };
-    }
-    
+  async reset(): Promise<PersistenceResponse> {
     const filePath = `${this.projectName}/${this.fileName}`;
     
     try {

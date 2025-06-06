@@ -9,9 +9,7 @@ interface ContextTypeFactoryArgs {
     projectName: string;
     persistenceHelper: FileSystemHelper;
     contextType: string;
-    options?: {
-        fileName?: string;
-    };
+    fileName: string;
 }
 
 const typeMap = {
@@ -22,18 +20,13 @@ const typeMap = {
 } as const;
 
 export function ContextTypeFactory(args: ContextTypeFactoryArgs): ContextType {
-    const { projectName, persistenceHelper, contextType, options = {} } = args;
+    const { persistenceHelper, projectName, contextType, fileName } = args;
     const TypeClass = typeMap[contextType as keyof typeof typeMap];
-    
-    // For 'other' type, don't pass any options
-    if (contextType === 'other') {
-        return new TypeClass(projectName, persistenceHelper);
-    }
-    
+        
     // For other types, pass the fileName option if provided
     return new TypeClass(
-        projectName, 
-        persistenceHelper, 
-        { fileName: options.fileName }
+        persistenceHelper,
+        projectName,
+        (contextType || fileName)
     );
 }
