@@ -8,11 +8,15 @@ interface CreateProjectArgs {
 }
 
 class CreateProjectHandler {
+  private fsHelper: FileSystemHelper;
+  
   constructor(
-    private fsHelper: FileSystemHelper = new FileSystemHelper(),
+    fsHelper: FileSystemHelper,
     private contextRoot: string = path.join(os.homedir(), '.shared-project-context'),
 
-  ) {}
+  ) {
+    this.fsHelper = fsHelper;
+  }
 
   async handle(args: CreateProjectArgs): Promise<{ content: ContentItem[] }> {
     const projectId = path.basename(args.projectId);

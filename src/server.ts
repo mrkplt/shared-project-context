@@ -6,7 +6,7 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprot
 
 // Import handlers
 import ListProjectsHandler from './handlers/listProjectsHandler';
-import ListFileTypesHandler from './handlers/listFileTypesHandler';
+import ListcontextTypesHandler from './handlers/listContextTypesHandler';
 import GetContextHandler from './handlers/getContextHandler';
 import UpdateContextHandler from './handlers/updateContextHandler';
 import CreateProjectHandler from './handlers/createProjectHandler';
@@ -17,7 +17,7 @@ class ContextManagerServer {
   private server: Server;
   private fsHelper: FileSystemHelper;
   private listProjectsHandler!: ListProjectsHandler;
-  private listFileTypesHandler!: ListFileTypesHandler;
+  private listcontextTypesHandler!: ListcontextTypesHandler;
   private getContextHandler!: GetContextHandler;
   private updateContextHandler!: UpdateContextHandler;
   private createProjectHandler!: CreateProjectHandler;
@@ -27,7 +27,7 @@ class ContextManagerServer {
     this.fsHelper = new FileSystemHelper();
     
     this.listProjectsHandler = new ListProjectsHandler(this.fsHelper);
-    this.listFileTypesHandler = new ListFileTypesHandler(this.fsHelper);
+    this.listcontextTypesHandler = new ListcontextTypesHandler(this.fsHelper);
     this.createProjectHandler = new CreateProjectHandler(this.fsHelper);
     this.getContextHandler = new GetContextHandler(this.fsHelper);
     this.updateContextHandler = new UpdateContextHandler(this.fsHelper);
@@ -65,7 +65,7 @@ When working with this server, start by listing projects to discover what's avai
       tools: [
         {
           name: 'list_projects',
-          description: 'Discover all available projects when starting work. Use this first if you don\'t know which project the user is referring to, or to see all projects available for context management. Always follow up with list_file_types to see what context exists for your chosen project.',
+          description: 'Discover all available projects when starting work. Use this first if you don\'t know which project the user is referring to, or to see all projects available for context management. Always follow up with list_context_types to see what context exists for your chosen project.',
           inputSchema: {
             type: 'object',
             properties: {},
@@ -73,29 +73,29 @@ When working with this server, start by listing projects to discover what's avai
           }
         },
         {
-          name: 'list_file_types',
+          name: 'list_context_types',
           description: 'Discover what context files exist for a specific project. Use this after selecting a project to see what information is already stored (mental_model, session_summary, features, bugs, etc.) before reading or updating context. This shows you what context types are available so you can retrieve relevant information.',
           inputSchema: {
             type: 'object',
             properties: {
-              project_id: { type: 'string' }
+              project_name: { type: 'string' }
             },
-            required: ['project_id']
+            required: ['project_name']
           }
         },
         {
           name: 'get_context',
-          description: 'Retrieve existing context from a specific file type within a project. Use this to read information that you or another AI assistant previously stored. Always use list_file_types first to see what context files are available for the project.',
+          description: 'Retrieve existing context from a specific file type within a project. Use this to read information that you or another AI assistant previously stored. Always use list_context_types first to see what context files are available for the project.',
           inputSchema: {
             type: 'object',
             properties: {
-              project_id: { type: 'string' },
-              file_type: { 
+              project_name: { type: 'string' },
+              context_type: { 
                 type: 'string', 
                 // enum: ['mental_model', 'session_summary', 'bugs', 'features'] 
               }
             },
-            required: ['project_id', 'file_type']
+            required: ['project_name', 'context_type']
           }
         },
         {
@@ -104,14 +104,14 @@ When working with this server, start by listing projects to discover what's avai
           inputSchema: {
             type: 'object',
             properties: {
-              project_id: { type: 'string' },
-              file_type: { 
+              project_name: { type: 'string' },
+              context_type: { 
                 type: 'string', 
                 // enum: ['mental_model', 'session_summary', 'bugs', 'features'] 
               },
               content: { type: 'string' }
             },
-            required: ['project_id', 'file_type', 'content']
+            required: ['project_name', 'context_type', 'content']
           }
         }
       ]
@@ -123,8 +123,8 @@ When working with this server, start by listing projects to discover what's avai
       
         try {
           switch (name) {
-            case 'list_file_types':
-              return await this.listFileTypesHandler.handle(args as { project_id: string });
+            case 'list_context_types':
+              return await this.listcontextTypesHandler.handle(args as { project_name: string });
               
             case 'list_projects':
               return await this.listProjectsHandler.handle();
@@ -133,7 +133,7 @@ When working with this server, start by listing projects to discover what's avai
               return await this.getContextHandler.handle(
                 args as { 
                   projectId: string; 
-                  fileType: string;
+                  contextType: string;
                   name?: string; 
                 });
               
@@ -141,7 +141,7 @@ When working with this server, start by listing projects to discover what's avai
               return await this.updateContextHandler.handle(
                 args as { 
                   projectId: string;
-                  fileType: string;
+                  contextType: string;
                   content: string;
                   name?: string;
                 }

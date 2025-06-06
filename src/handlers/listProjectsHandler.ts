@@ -2,19 +2,22 @@ import * as os from 'os';
 import * as path from 'path';
 import { FileSystemHelper } from './utilities/fileSystem';
 import { Dirent } from 'fs';
-import { ContentItem } from '../types';
+
+interface ContentItem {
+  type: string;
+  text: string;
+}
 
 class ListProjectsHandler {
-  private contextRoot: string;
-  private fsHelper: FileSystemHelper;
+  private fsHelper: FileSystemHelper
+  private contextRoot: string
 
   constructor(
-    fsHelper: FileSystemHelper,
-    contextRoot: string = path.join(os.homedir(), '.shared-project-context'),
-    
+
+    fsHelper: FileSystemHelper
   ) {
-    this.contextRoot = contextRoot;
     this.fsHelper = fsHelper;
+    this.contextRoot = path.join(os.homedir(), '.shared-project-context');
   }
 
   async handle(): Promise<{ content: ContentItem[] }> {

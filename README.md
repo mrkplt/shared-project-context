@@ -38,14 +38,14 @@ The server provides the following tools:
 Get a context file for a project.
 
 **Parameters:**
-- `project_id` (string): The ID of the project
-- `file_type` (string): Type of context file ('mental_model', 'session_summary', 'bugs', 'features')
+- `projectName` (string): The ID of the project
+- `contextType` (string): Type of context file ('mental_model', 'session_summary', 'bugs', 'features')
 
 **Example:**
 ```typescript
 const result = await executeTool('get_context', {
-  project_id: 'my-project',
-  file_type: 'mental_model'
+  projectName: 'my-project',
+  contextType: 'mental_model'
 });
 ```
 
@@ -54,15 +54,15 @@ const result = await executeTool('get_context', {
 Update a context file with validation.
 
 **Parameters:**
-- `project_id` (string): The ID of the project
-- `file_type` (string): Type of context file ('mental_model', 'session_summary', 'bugs', 'features')
+- `projectName` (string): The ID of the project
+- `contextType` (string): Type of context file ('mental_model', 'session_summary', 'bugs', 'features')
 - `content` (string): The content to update
 
 **Example:**
 ```typescript
 const result = await executeTool('update_context', {
-  project_id: 'my-project',
-  file_type: 'mental_model',
+  projectName: 'my-project',
+  contextType: 'mental_model',
   content: '# Project Mental Model\n\n## Overview\n\nProject details here.'
 });
 ```

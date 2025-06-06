@@ -178,19 +178,19 @@ export class FileSystemHelper {
     return path.join(this.contextRoot, 'projects', projectId);
   }
 
-  async getContextFilePath(projectId: string, fileType: string, name?: string): Promise<string> {
+  async getContextFilePath(projectId: string, contextType: string, name?: string): Promise<string> {
     const projectPath = await this.getProjectPath(projectId)
     await this.ensureDirectoryExists(projectPath);
 
-    switch (fileType) {
+    switch (contextType) {
       case 'session_summary':
-        return path.join(projectPath, fileType, `${name}.md`);
+        return path.join(projectPath, contextType, `${name}.md`);
       case 'other':
-        return path.join(projectPath, fileType, `${name}.md`);
+        return path.join(projectPath, contextType, `${name}.md`);
       case 'mental_model':
-        return path.join(projectPath, `${fileType}.md`);
+        return path.join(projectPath, `${contextType}.md`);
       case 'features':
-        return path.join(projectPath, `${fileType}.md`);
+        return path.join(projectPath, `${contextType}.md`);
       default:
         throw new Error('Invalid file type');
     }

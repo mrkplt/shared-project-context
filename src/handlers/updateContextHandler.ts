@@ -4,33 +4,37 @@ import { ContentItem } from '../types';
 
 interface UpdateContextArgs {
   projectId: string;
-  fileType: string;
+  contextType: string;
   content: string;
   fileName?: string; // For 'other' type files
 }
 
 class UpdateContextHandler {
+  private fsHelper: FileSystemHelper;
+
   constructor(
-    private fsHelper: FileSystemHelper 
-  ) {}
+    fsHelper: FileSystemHelper 
+  ) {
+    this.fsHelper = fsHelper;
+  }
 
   async handle(args: UpdateContextArgs): Promise<{ content: ContentItem[] }> {
-    if (args.fileType === 'other' && !args.fileName) {
+    if (args.contextType === 'other' && !args.fileName) {
       throw new Error('File name is required for type "other"');
     }
 
     const contextType = ContextTypeFactory({
       projectName: args.projectId,
       persistenceHelper: this.fsHelper,
-      contextType: args.fileType,
-      fileName: args.fileName || args.fileType
+      contextType: args.contextType,
+      fileName: args.fileName || args.contextType
     });
 
     try {
-      const filePath = await this.fsHelper.getContextFilePath(args.projectId, args.fileType, args.fileName);
+      const filePath = await this.fsHelper.getContextFilePath(args.projectId, args.contextType, args.fileName);
 
       // Determine write behavior based on file type
-      if (args.fileType === 'session_summary') {
+      if (args.contextType === 'session_summary') {
         // For session_summary, append with timestamp
         const timestampedContent = `\n\n## ${new Date().toISOString()}\n${args.content}`;
         await contextType.persistenceHelper.appendFile(filePath, timestampedContent);

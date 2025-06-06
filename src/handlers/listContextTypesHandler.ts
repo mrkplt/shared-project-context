@@ -2,17 +2,21 @@ import * as path from 'path';
 import { FileSystemHelper } from './utilities/fileSystem';
 import { ContentItem } from '../types';
 
-interface ListFileTypesArgs {
-  project_id: string;
+interface ListcontextTypesArgs {
+  project_name: string;
 }
 
-class ListFileTypesHandler {
+class ListcontextTypesHandler {
+  private fsHelper: FileSystemHelper;
+  
   constructor(
-    private fsHelper: FileSystemHelper,
-  ) {}
+    fsHelper: FileSystemHelper,
+  ) {
+    this.fsHelper = fsHelper;
+  }
 
-  async handle(args: ListFileTypesArgs): Promise<{ content: ContentItem[] }> {
-    const projectDir = path.join(this.fsHelper.contextRoot, 'projects', args.project_id);
+  async handle(args: ListcontextTypesArgs): Promise<{ content: ContentItem[] }> {
+    const projectDir = path.join(this.fsHelper.contextRoot, 'projects', args.project_name);
     
     try {
       // Ensure project directory exists
@@ -22,7 +26,7 @@ class ListFileTypesHandler {
       const entries = await this.fsHelper.readdir(projectDir, { withFileTypes: true }) as import('fs').Dirent[];
       
       // Filter for files, ignore system files, and extract file types (extensions removed)
-      const fileTypes = entries
+      const contextTypes = entries
         .filter((entry): entry is import('fs').Dirent & { name: string } => 
           entry.isFile() && 
           typeof entry.name === 'string' &&
@@ -38,7 +42,7 @@ class ListFileTypesHandler {
       return {
         content: [{
           type: 'text',
-          text: JSON.stringify(fileTypes)
+          text: JSON.stringify(contextTypes)
         }]
       };
     } catch (error) {
@@ -62,4 +66,4 @@ class ListFileTypesHandler {
   }
 }
 
-export default ListFileTypesHandler;
+export default ListcontextTypesHandler;

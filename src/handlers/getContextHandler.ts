@@ -4,24 +4,28 @@ import { ContentItem } from '../types';
 
 interface GetContextArgs {
   projectId: string;
-  fileType: string;
+  contextType: string;
   fileName?: string;
 }
 
 class GetContextHandler {
+  private fsHelper: FileSystemHelper;
+  
   constructor(
-    private fsHelper: FileSystemHelper
-  ) {}
+    fsHelper: FileSystemHelper
+  ) {
+    this.fsHelper = fsHelper;
+  }
 
   async handle(args: GetContextArgs): Promise<{ content: ContentItem[] }> {
     const contextType = ContextTypeFactory({
       projectName: args.projectId,
       persistenceHelper: this.fsHelper,
-      contextType: args.fileType,
-      fileName: args.fileName || args.fileType
+      contextType: args.contextType,
+      fileName: args.fileName || args.contextType
     });
     try {
-      const filePath = await this.fsHelper.getContextFilePath(args.projectId, args.fileType);
+      const filePath = await this.fsHelper.getContextFilePath(args.projectId, args.contextType);
       const content = await contextType.persistenceHelper.readFile(filePath);
       
       return {
