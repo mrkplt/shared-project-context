@@ -5,6 +5,7 @@ import { ContentItem } from '../types';
 interface GetContextArgs {
   projectId: string;
   fileType: string;
+  fileName?: string;
 }
 
 class GetContextHandler {
@@ -16,7 +17,8 @@ class GetContextHandler {
     const contextType = ContextTypeFactory({
       projectName: args.projectId,
       persistenceHelper: this.fsHelper,
-      contextType: args.fileType
+      contextType: args.fileType,
+      fileName: args.fileName || args.fileType
     });
     try {
       const filePath = await this.fsHelper.getContextFilePath(args.projectId, args.fileType);

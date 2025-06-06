@@ -6,7 +6,7 @@ interface UpdateContextArgs {
   projectId: string;
   fileType: string;
   content: string;
-  name?: string; // For 'other' type files
+  fileName?: string; // For 'other' type files
 }
 
 class UpdateContextHandler {
@@ -15,18 +15,19 @@ class UpdateContextHandler {
   ) {}
 
   async handle(args: UpdateContextArgs): Promise<{ content: ContentItem[] }> {
-    if (args.fileType === 'other' && !args.name) {
+    if (args.fileType === 'other' && !args.fileName) {
       throw new Error('File name is required for type "other"');
     }
 
     const contextType = ContextTypeFactory({
       projectName: args.projectId,
       persistenceHelper: this.fsHelper,
-      contextType: args.fileType
+      contextType: args.fileType,
+      fileName: args.fileName || args.fileType
     });
 
     try {
-      const filePath = await this.fsHelper.getContextFilePath(args.projectId, args.fileType, args.name);
+      const filePath = await this.fsHelper.getContextFilePath(args.projectId, args.fileType, args.fileName);
 
       // Determine write behavior based on file type
       if (args.fileType === 'session_summary') {

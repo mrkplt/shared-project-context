@@ -130,7 +130,12 @@ When working with this server, start by listing projects to discover what's avai
               return await this.listProjectsHandler.handle();
               
             case 'get_context':
-              return await this.getContextHandler.handle(args as { projectId: string; fileType: string });
+              return await this.getContextHandler.handle(
+                args as { 
+                  projectId: string; 
+                  fileType: string;
+                  name?: string; 
+                });
               
             case 'update_context':
               return await this.updateContextHandler.handle(
