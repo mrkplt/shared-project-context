@@ -148,7 +148,7 @@ When working with this server, start by listing projects to discover what's avai
               );
 
             case 'create_project':
-              return await this.createProjectHandler.handle(args as { projectId: string });
+              return await this.createProjectHandler.handle(args.projectId as string);
               
             default:
               throw new Error(`Unknown tool: ${name}`);

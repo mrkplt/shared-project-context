@@ -170,6 +170,12 @@ export class FileSystemHelper {
     }
   }
 
+  async initProject(projectId: string): Promise<void> {
+    await this.ensureDirectoryExists(
+      await this.getProjectPath(projectId)
+    );
+  }
+
   async listDirectory(directory: string): Promise<Dirent[]> {
     return this.fs.readdir(directory, { withFileTypes: true });
   }
@@ -195,7 +201,4 @@ export class FileSystemHelper {
         throw new Error('Invalid file type');
     }
   };
-
-
-
 }

@@ -1,29 +1,18 @@
-import * as os from 'os';
-import * as path from 'path';
 import { ContentItem } from '../types';
 import { FileSystemHelper } from './utilities/fileSystem';
-
-interface CreateProjectArgs {
-    projectId: string;
-}
 
 class CreateProjectHandler {
   private fsHelper: FileSystemHelper;
   
   constructor(
     fsHelper: FileSystemHelper,
-    private contextRoot: string = path.join(os.homedir(), '.shared-project-context'),
-
   ) {
     this.fsHelper = fsHelper;
-  }
+    }
 
-  async handle(args: CreateProjectArgs): Promise<{ content: ContentItem[] }> {
-    const projectId = path.basename(args.projectId);
-    const contextPath = path.join(this.contextRoot, 'projects', projectId);
-
+  async handle(projectId: string): Promise<{ content: ContentItem[] }> {
     try {
-      await this.fsHelper.ensureDirectoryExists(contextPath);
+      await this.fsHelper.initProject(projectId);
       return {
         content: [{
           type: 'text',
