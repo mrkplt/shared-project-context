@@ -125,6 +125,9 @@ export class FileSystemHelper {
     }
   }
 
+  //this is bullshit. its just a copy and paste of ensureDirectoryExists. 
+  // I made these just to satisfy interface. I need to see if anything else
+  // in this file does this.
   async moveFile(directory: string, targetPath: string): Promise<void> {
     try {
       await this.fs.access(directory);
@@ -137,6 +140,9 @@ export class FileSystemHelper {
     }
   }
 
+  //this is bullshit. its just a copy and paste of ensureDirectoryExists. 
+  // I made these just to satisfy interface. I need to see if anything else
+  // in this file does this.
   async getFileInfo(directory: string): Promise<void> {
     try {
       await this.fs.access(directory);
@@ -149,6 +155,9 @@ export class FileSystemHelper {
     }
   }
 
+  //this is bullshit. its just a copy and paste of ensureDirectoryExists. 
+  // I made these just to satisfy interface. I need to see if anything else
+  // in this file does this.s
   async archive(directory: string, archivePath: string): Promise<void> {
     try {
       await this.fs.access(directory);

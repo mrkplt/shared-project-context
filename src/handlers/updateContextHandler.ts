@@ -15,7 +15,6 @@ class UpdateContextHandler {
   ) {}
 
   async handle(args: UpdateContextArgs): Promise<{ content: ContentItem[] }> {
-    // Validate file_type for 'other' requires a name
     if (args.fileType === 'other' && !args.name) {
       throw new Error('File name is required for type "other"');
     }
