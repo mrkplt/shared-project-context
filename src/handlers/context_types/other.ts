@@ -1,21 +1,37 @@
-import { ValidationResponse, ContextType, PersistenceResponse, ReadResponse } from '../../types.js';
+import { ValidationResponse, ContextType, PersistenceResponse } from '../../types.js';
 import { FileSystemHelper } from '../utilities/fileSystem.js';
 
 export class OtherType implements ContextType {
-  public persistenceHelper: FileSystemHelper;
+  private static readonly FILE_PREFIX = 'other_';
+  
+  public readonly persistenceHelper: FileSystemHelper;
+  private readonly projectName: string;
 
+  /**
+   * Creates a new OtherType instance for handling arbitrary file types
+   * @param projectName - Name of the project this context belongs to
+   * @param persistenceHelper - Helper for file system operations
+   */
   constructor(
-    private projectName: string,
-    persistenceHelper: FileSystemHelper,
+    projectName: string,
+    persistenceHelper: FileSystemHelper
   ) {
+    this.projectName = projectName;
     this.persistenceHelper = persistenceHelper;
   }
 
-  async update(content: string, name?: string): Promise<PersistenceResponse> {
+  async update(name: string | undefined, content: string): Promise<PersistenceResponse> {
     if (!name) {
       return {
         success: false,
-        error: 'Name parameter is required for other type'
+        error: 'Name parameter is required for other type',
+        validation: {
+          isValid: false,
+          validationErrors: ['missing_name', 'Name parameter is required', 'error'],
+          correctionGuidance: [
+            '1. Provide a name parameter for the file'
+          ]
+        }
       };
     }
 
@@ -29,10 +45,8 @@ export class OtherType implements ContextType {
       };
     }
 
-    // this should create a other directory and persist to that.
-    // This is actually a file system implemnentation detail but 
-    // it's fine here for now.
-    const filename = `other_${name}.md`;
+    // Construct the filename with the 'other_' prefix
+    const filename = `${OtherType.FILE_PREFIX}${name}.md`;
     const filePath = `${this.projectName}/${filename}`;
     
     try {
@@ -49,11 +63,18 @@ export class OtherType implements ContextType {
     }
   }
 
-  async read(name?: string): Promise<PersistenceResponse> {
+  async read(name: string | undefined): Promise<PersistenceResponse> {
     if (!name) {
       return {
         success: false,
-        error: 'Name parameter is required for other type'
+        error: 'Name parameter is required for other type',
+        validation: {
+          isValid: false,
+          validationErrors: ['missing_name', 'Name parameter is required', 'error'],
+          correctionGuidance: [
+            '1. Provide a name parameter for the file'
+          ]
+        }
       };
     }
 

@@ -1,17 +1,31 @@
-import { ValidationResponse, ContextType, PersistenceResponse, ReadResponse } from '../../types.js';
+import { ValidationResponse, ContextType, PersistenceResponse } from '../../types.js';
 import { Dirent } from 'fs';
 import { FileSystemHelper } from '../utilities/fileSystem.js';
 
 export class SessionSummaryType implements ContextType {
+  private static readonly DEFAULT_FILE_NAME = 'session_summary.md';
   private readonly directoryName = 'session_summary';
   private readonly archiveBasePath = 'archives/session_summary';
-  persistenceHelper: FileSystemHelper;
+  
+  public readonly persistenceHelper: FileSystemHelper;
+  private readonly projectName: string;
+  private readonly fileName: string;
 
+  /**
+   * Creates a new SessionSummaryType instance
+   * @param projectName - Name of the project this context belongs to
+   * @param persistenceHelper - Helper for file system operations
+   * @param options - Optional configuration
+   * @param options.fileName - Custom file name (defaults to 'session_summary.md')
+   */
   constructor(
-    private projectName: string,
-    persistenceHelper: FileSystemHelper, // Your existing FileSystemHelper,
+    projectName: string,
+    persistenceHelper: FileSystemHelper,
+    options: { fileName?: string } = {}
   ) {
+    this.projectName = projectName;
     this.persistenceHelper = persistenceHelper;
+    this.fileName = options.fileName || SessionSummaryType.DEFAULT_FILE_NAME;
   }
 
   private getSessionSummaryDir(): string {
@@ -26,7 +40,22 @@ export class SessionSummaryType implements ContextType {
     return `${isoString.replace(/\.\d+Z$/, '').replace(/[:.]/g, '-')}.md`;
   }
 
-  async update(_name: string | undefined, content: string): Promise<PersistenceResponse> {
+  async update(name: string | undefined, content: string): Promise<PersistenceResponse> {
+    if (name && name !== 'session_summary') {
+      return {
+        success: false,
+        error: 'If provided, name must be "session_summary"',
+        validation: {
+          isValid: false,
+          validationErrors: ['invalid_name', 'If provided, name must be "session_summary"', 'error'],
+          correctionGuidance: [
+            '1. Remove the name parameter, or',
+            '2. Set the name parameter to "session_summary"'
+          ]
+        }
+      };
+    }
+
     // Ensure session_summary directory exists
     const sessionSummaryDir = this.getSessionSummaryDir();
     
@@ -48,7 +77,7 @@ export class SessionSummaryType implements ContextType {
     }
   }
 
-  async read(_name?: string): Promise<ReadResponse> {
+  async read(_name?: string): Promise<PersistenceResponse> {
     const sessionSummaryDir = this.getSessionSummaryDir();
     
     try {

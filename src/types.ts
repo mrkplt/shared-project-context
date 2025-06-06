@@ -14,16 +14,10 @@
 
    export interface PersistenceResponse {   
     success: boolean;
+    content?: string;
     validation?: ValidationResponse;
     error?: string;
    }
-
-   export interface ReadResponse {
-    success: boolean;
-    content: string;
-    error?: string;
-   }
-    
 
    // Context Type Interface
    export interface ContextType {

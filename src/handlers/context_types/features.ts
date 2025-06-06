@@ -1,15 +1,28 @@
-import { ValidationResponse, ContextType, PersistenceResponse, ReadResponse } from '../../types.js';
+import { ValidationResponse, ContextType, PersistenceResponse } from '../../types.js';
 import { FileSystemHelper } from '../utilities/fileSystem.js';
 
 export class FeaturesType implements ContextType {
-  private readonly fileName = 'features.md';
-  persistenceHelper: FileSystemHelper;
+  private static readonly DEFAULT_FILE_NAME = 'features.md';
+  
+  public readonly persistenceHelper: FileSystemHelper;
+  private readonly projectName: string;
+  private readonly fileName: string;
 
+  /**
+   * Creates a new FeaturesType instance
+   * @param projectName - Name of the project this context belongs to
+   * @param persistenceHelper - Helper for file system operations
+   * @param options - Optional configuration
+   * @param options.fileName - Custom file name (defaults to 'features.md')
+   */
   constructor(
-    private projectName: string,
-    persistenceHelper: FileSystemHelper // Your existing FileSystemHelper,
-  ) { 
+    projectName: string,
+    persistenceHelper: FileSystemHelper,
+    options: { fileName?: string } = {}
+  ) {
+    this.projectName = projectName;
     this.persistenceHelper = persistenceHelper;
+    this.fileName = options.fileName || FeaturesType.DEFAULT_FILE_NAME;
   }
 
   private validateName(name?: string): ValidationResponse {
@@ -48,7 +61,7 @@ export class FeaturesType implements ContextType {
     }
   }
 
-  async read(_name?: string): Promise<ReadResponse> {
+  async read(_name?: string): Promise<PersistenceResponse> {
     const nameValidation = this.validateName(_name);
     if (!nameValidation.isValid) {
       return {

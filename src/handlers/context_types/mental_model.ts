@@ -1,15 +1,28 @@
-import { ValidationResponse, ContextType, PersistenceResponse, ReadResponse } from '../../types.js';
+import { ValidationResponse, ContextType, PersistenceResponse } from '../../types.js';
 import { FileSystemHelper } from '../utilities/fileSystem.js';
 
 export class MentalModelType implements ContextType {
-  private readonly fileName = 'mental_model.md';
-  persistenceHelper: FileSystemHelper;
+  private static readonly DEFAULT_FILE_NAME = 'mental_model.md';
+  
+  public readonly persistenceHelper: FileSystemHelper;
+  private readonly projectName: string;
+  private readonly fileName: string;
 
+  /**
+   * Creates a new MentalModelType instance
+   * @param projectName - Name of the project this context belongs to
+   * @param persistenceHelper - Helper for file system operations
+   * @param options - Optional configuration
+   * @param options.fileName - Custom file name (defaults to 'mental_model.md')
+   */
   constructor(
-    private projectName: string,
-    persistenceHelper: FileSystemHelper, // Your existing FileSystemHelper,
+    projectName: string,
+    persistenceHelper: FileSystemHelper,
+    options: { fileName?: string } = {}
   ) {
+    this.projectName = projectName;
     this.persistenceHelper = persistenceHelper;
+    this.fileName = options.fileName || MentalModelType.DEFAULT_FILE_NAME;
   }
 
   private validateName(name?: string): ValidationResponse {
@@ -26,12 +39,19 @@ export class MentalModelType implements ContextType {
     return { isValid: true };
   }
 
-  async update(_name: string | undefined, content: string): Promise<PersistenceResponse> {
-    const nameValidation = this.validateName(_name);
-    if (!nameValidation.isValid) {
+  async update(name: string | undefined, content: string): Promise<PersistenceResponse> {
+    if (name && name !== 'mental_model') {
       return {
         success: false,
-        error: nameValidation.validationErrors?.join(' - ') || 'Invalid name parameter'
+        error: 'If provided, name must be "mental_model"',
+        validation: {
+          isValid: false,
+          validationErrors: ['invalid_name', 'If provided, name must be "mental_model"', 'error'],
+          correctionGuidance: [
+            '1. Remove the name parameter, or',
+            '2. Set the name parameter to "mental_model"'
+          ]
+        }
       };
     }
     
@@ -48,7 +68,7 @@ export class MentalModelType implements ContextType {
     }
   }
 
-  async read(_name?: string): Promise<ReadResponse> {
+  async read(_name?: string): Promise<PersistenceResponse> {
     const nameValidation = this.validateName(_name);
     if (!nameValidation.isValid) {
       return {
