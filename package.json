@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "description": "MCP Server for managing AI agent context with validation and correction guidance",
   "main": "dist/index.js",
+  "bin": {
+    "mcp-context-server": "dist/server.js"
+  },
   "files": [
     "dist"
   ],
@@ -13,7 +16,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "lint": "eslint 'src/**/*.ts'"
+    "lint": "eslint 'src/**/*.ts'",
+    "install-server": "npm run build && npm install -g . && chmod +x \"$(npm root -g)/mcp-context-server/dist/server.js\""
   },
   "keywords": [
     "mcp",
@@ -49,5 +53,6 @@
     "ts-node": "^10.9.2",
     "tsx": "^4.7.1",
     "typescript": "^5.3.3"
-  }
+  },
+  "preferGlobal": true
 }
