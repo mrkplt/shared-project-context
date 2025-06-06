@@ -1,5 +1,3 @@
-import * as os from 'os';
-import * as path from 'path';
 import { FileSystemHelper } from './utilities/fileSystem';
 import { Dirent } from 'fs';
 
@@ -10,18 +8,16 @@ interface ContentItem {
 
 class ListProjectsHandler {
   private fsHelper: FileSystemHelper
-  private contextRoot: string
 
   constructor(
 
     fsHelper: FileSystemHelper
   ) {
     this.fsHelper = fsHelper;
-    this.contextRoot = path.join(os.homedir(), '.shared-project-context');
   }
 
   async handle(): Promise<{ content: ContentItem[] }> {
-    const projectsDir = path.join(this.contextRoot, 'projects');
+    const projectsDir = this.fsHelper.contextRoot;
 
     try {
       await this.fsHelper.ensureDirectoryExists(projectsDir);

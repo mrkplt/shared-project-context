@@ -1,4 +1,3 @@
-import * as path from 'path';
 import { FileSystemHelper } from './utilities/fileSystem';
 import { ContentItem } from '../types';
 
@@ -16,7 +15,7 @@ class ListcontextTypesHandler {
   }
 
   async handle(args: ListcontextTypesArgs): Promise<{ content: ContentItem[] }> {
-    const projectDir = path.join(this.fsHelper.contextRoot, 'projects', args.project_name);
+    const projectDir = await this.fsHelper.getProjectPath(args.project_name);
     
     try {
       // Ensure project directory exists
