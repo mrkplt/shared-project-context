@@ -10,7 +10,7 @@ import ListcontextTypesHandler from './handlers/listContextTypesHandler';
 import GetContextHandler from './handlers/getContextHandler';
 import UpdateContextHandler from './handlers/updateContextHandler';
 import CreateProjectHandler from './handlers/createProjectHandler';
-import { FileSystemHelper } from './handlers/utilities/fileSystem';
+import { FileSystemHelper } from './models/context_types/utilities/fileSystem';
 
 // Main server class that implements the MCP protocol
 class ContextManagerServer {

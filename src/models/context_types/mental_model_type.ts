@@ -1,5 +1,5 @@
 import { ValidationResponse, ContextType, PersistenceResponse } from '../../types.js';
-import { FileSystemHelper } from '../utilities/fileSystem.js';
+import { FileSystemHelper } from './utilities/fileSystem.js';
 
 export class MentalModelType implements ContextType {
   private static readonly DEFAULT_FILE_NAME = 'mental_model';

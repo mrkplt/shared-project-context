@@ -1,6 +1,6 @@
 import { ValidationResponse, ContextType, PersistenceResponse } from '../../types.js';
 import { Dirent } from 'fs';
-import { FileSystemHelper } from '../utilities/fileSystem.js';
+import { FileSystemHelper } from './utilities/fileSystem.js';
 
 export class SessionSummaryType implements ContextType {
   private static readonly DEFAULT_FILE_NAME = 'session_summary';

@@ -1,4 +1,4 @@
-   import { FileSystemHelper } from "./handlers/utilities/fileSystem";
+   import { FileSystemHelper } from "./models/context_types/utilities/fileSystem";
 
    //Used in Handlers
    export interface ContentItem {

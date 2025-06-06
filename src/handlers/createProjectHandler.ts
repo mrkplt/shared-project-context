@@ -1,5 +1,5 @@
 import { ContentItem } from '../types';
-import { FileSystemHelper } from './utilities/fileSystem';
+import { FileSystemHelper } from '../models/context_types/utilities/fileSystem';
 
 class CreateProjectHandler {
   private fsHelper: FileSystemHelper;
