@@ -1,10 +1,10 @@
 {
-  "name": "mcp-context-server",
+  "name": "shared-project-context",
   "version": "0.1.0",
   "description": "MCP Server for managing AI agent context with validation and correction guidance",
   "main": "dist/index.js",
   "bin": {
-    "mcp-context-server": "dist/server.js"
+    "shared-project-context": "dist/server.js"
   },
   "files": [
     "dist"
@@ -17,7 +17,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "lint": "eslint 'src/**/*.ts'",
-    "install-server": "npm run build && npm install -g . && chmod +x \"$(npm root -g)/mcp-context-server/dist/server.js\""
+    "install-server": "npm run build && npm install -g . && chmod +x \"$(npm root -g)/shared-project-context/dist/server.js\""
   },
   "keywords": [
     "mcp",
