@@ -2,6 +2,7 @@ import { Dirent } from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { PersistenceHelper } from '../../../types.js';
+import { persistenceResponse } from '../../../types.js';
 
  const defaultFileSystem = {
   readFile: async (p: string, encoding: BufferEncoding) => {
@@ -69,7 +70,7 @@ export class FileSystemHelper implements PersistenceHelper {
     this.contextRoot = contextRoot;
   }
 
-  async initProject(projectId: string): Promise<{success: boolean}> {
+  async initProject(projectId: string): Promise<persistenceResponse> {
     await this.ensureDirectoryExists(
       await this.getProjectPath(projectId)
     );
@@ -130,15 +131,25 @@ export class FileSystemHelper implements PersistenceHelper {
     }
   }
 
-  async writeContent(projectId: string, fileName: string, content: string): Promise<{success: boolean}> {
-    const filePath = await this.getContextFilePath(projectId, fileName);
-    await this.fs.writeFile(filePath, content);
+  async writeContext(projectName: string, contextType: string, fileName: string, content: string): Promise<persistenceResponse> {
+    try {
+      const projectPath = await this.getProjectPath(projectName);
+      const contextTypeDir = path.join(projectPath, contextType);
+      await this.ensureDirectoryExists(contextTypeDir);
 
-    return {success: true};
+      const filePath = path.join(contextTypeDir, fileName);
+      await this.fs.writeFile(filePath, content);
+
+      return {success: true};
+
+    } catch (error) {
+      return {success: false, errors: [`Failed to write context: ${error instanceof Error ? error.message : 'Unknown error'}`]};
+      // throw new Error();
+    }
   }
 
   // This needs to be built
-  async archiveContext(projectName: string, contextType: string, contextName?: string): Promise<{success: boolean}> {
+  async archiveContext(projectName: string, contextType: string, contextName?: string): Promise<persistenceResponse> {
      // Archive the file first
      const timestamp = new Date().toISOString().split('T')[0];
      const projectPath = await this.getProjectPath(projectName);

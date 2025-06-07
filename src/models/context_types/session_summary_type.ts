@@ -27,27 +27,21 @@ export class SessionSummaryType implements ContextType {
   }
 
   async update(content: string): Promise<PersistenceResponse> {
-    // Ensure session_summary directory exists
-    const sessionSummaryDir = this.getSessionSummaryDir();
-    try {
-      await this.persistenceHelper.ensureDirectoryExists(sessionSummaryDir);
-      
-      // Generate timestamped filename
-      const fileName = this.generateTimestampedFileName();
-      const filePath = `${sessionSummaryDir}/${fileName}`;
-      
-      // Write the file
-      await this.persistenceHelper.writeFile(filePath, content);
-      return { success: true };
-    } catch (error) {
+    const result = await this.persistenceHelper.writeContext(
+      this.projectName, this.directoryName, this.fileName, content
+    );
+     
+    if (!result.success) {
       return {
         success: false,
-        errors: [`Failed to write session summary: ${error instanceof Error ? error.message : 'Unknown error'}`],
+        errors: result.errors,
         validation: this.validationResponse
       };
     }
-  }
 
+    return { success: true };
+  }
+  
   async read(_name?: string): Promise<PersistenceResponse> {
     const sessionSummaryDir = this.getSessionSummaryDir();
     
