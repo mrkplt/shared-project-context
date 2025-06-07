@@ -18,7 +18,7 @@
     success: boolean;
     content?: string;
     validation?: ValidationResponse;
-    error?: string;
+    errors?: string[];
    }
 
    // Context Type Interface

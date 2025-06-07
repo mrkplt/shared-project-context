@@ -42,7 +42,7 @@ export class SessionSummaryType implements ContextType {
     } catch (error) {
       return {
         success: false,
-        error: `Failed to write session summary: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        errors: [`Failed to write session summary: ${error instanceof Error ? error.message : 'Unknown error'}`],
         validation: this.validationResponse
       };
     }
@@ -89,7 +89,7 @@ export class SessionSummaryType implements ContextType {
       return {
         success: false,
         content: '',
-        error: `Failed to read session summaries: ${error instanceof Error ? error.message : 'Unknown error'}`
+        errors: [`Failed to read session summaries: ${error instanceof Error ? error.message : 'Unknown error'}`]
       };
     }
   }
@@ -130,7 +130,7 @@ export class SessionSummaryType implements ContextType {
     } catch (error) {
       return {
         success: false,
-        error: `Failed to reset session summaries: ${error instanceof Error ? error.message : 'Unknown error'}`
+        errors: [`Failed to reset session summaries: ${error instanceof Error ? error.message : 'Unknown error'}`]
       };
     }
   }

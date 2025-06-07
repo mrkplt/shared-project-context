@@ -12,14 +12,14 @@ interface ContextTypeFactoryArgs {
     fileName: string;
 }
 
-const typeMap = {
+export const typeMap = {
     session_summary: SessionSummaryType,
     mental_model: MentalModelType,
     features: FeaturesType,
     other: OtherType
 } as const;
 
-export function ContextTypeFactory(args: ContextTypeFactoryArgs): ContextType {
+ export default function contextTypeFactory(args: ContextTypeFactoryArgs): ContextType {
     const { persistenceHelper, projectName, contextType, fileName } = args;
     const TypeClass = typeMap[contextType as keyof typeof typeMap];
         

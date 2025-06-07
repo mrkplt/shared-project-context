@@ -27,7 +27,7 @@ export class FeaturesType implements ContextType {
     } catch (error) {
       return {
         success: false,
-        error: `Failed to write file: ${error instanceof Error ? error.message : 'Unknown error'}`
+        errors: [`Failed to write file: ${error instanceof Error ? error.message : 'Unknown error'}`]
       };
     }
   }
@@ -42,7 +42,7 @@ export class FeaturesType implements ContextType {
       return {
         success: false,
         content: '',
-        error: `Failed to read file: ${error instanceof Error ? error.message : 'Unknown error'}`
+        errors: [`Failed to read file: ${error instanceof Error ? error.message : 'Unknown error'}`]
       };
     }
   }
@@ -66,10 +66,10 @@ export class FeaturesType implements ContextType {
         // File doesn't exist, nothing to reset
         return {
           success: false,
-          error: `Failed to reset file: ${error.message}`
+          errors: [`Failed to reset file: ${error.message}`]
         };
       }
-      return { success: false, error: 'Unknown error during reset' };
+      return { success: false, errors: ['Unknown error during reset'] };
     }
   }
 

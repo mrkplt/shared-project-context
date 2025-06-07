@@ -1,5 +1,5 @@
 import { FileSystemHelper } from '../models/context_types/utilities/fileSystem';
-import  { ContextTypeFactory } from '../models/contexTypeFactory';
+import  ContextTypeFactory from '../models/contexTypeFactory';
 import { ContentItem } from '../types';
 
 interface UpdateContextArgs {

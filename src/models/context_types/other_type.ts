@@ -30,11 +30,10 @@ export class OtherType implements ContextType {
       return {
         success: false,
         validation,
-        error: 'Content validation failed'
+        errors: ['Content validation failed']
       };
     }
 
-    // Construct the filename with the 'other_' prefix
     const filename = `${OtherType.FILE_PREFIX}${this.fileName}.md`;
     const filePath = `${this.projectName}/${filename}`;
     
@@ -47,7 +46,7 @@ export class OtherType implements ContextType {
     } catch (error) {
       return {
         success: false,
-        error: `Failed to write file: ${error instanceof Error ? error.message : 'Unknown error'}`
+        errors: [`Failed to write file: ${error instanceof Error ? error.message : 'Unknown error'}`]
       };
     }
   }
@@ -64,7 +63,7 @@ export class OtherType implements ContextType {
     } catch (error) {
       return {
         success: false,
-        error: `Failed to read file: ${error instanceof Error ? error.message : 'Unknown error'}`
+        errors: [`Failed to read file: ${error instanceof Error ? error.message : 'Unknown error'}`]
       };
     }
   }
@@ -73,7 +72,7 @@ export class OtherType implements ContextType {
     if (!name) {
       return {
         success: false,
-        error: 'Name parameter is required for other type'
+        errors: ['Name parameter is required for other type']
       };
     }
 
@@ -95,7 +94,7 @@ export class OtherType implements ContextType {
         // File doesn't exist, nothing to reset
         return {
           success: false,
-          error: `Failed to reset file: ${error instanceof Error ? error.message : 'Unknown error'}`
+          errors: [`Failed to reset file: ${error instanceof Error ? error.message : 'Unknown error'}`]
         };
       }
     }
@@ -124,5 +123,9 @@ export class OtherType implements ContextType {
     }
     
     return { isValid: true };
+  }
+
+  async listAllContext(): Promise<string[]> {
+    return await this.persistenceHelper.listAllContext(`${this.projectName}/other`);
   }
 }

@@ -76,6 +76,31 @@ export class FileSystemHelper {
   ) {
     this.contextRoot = contextRoot;
   }
+  async listAllContext(dirPath: string): Promise<string[]> {
+    try {
+      const entries = await this.readdir(dirPath, { withFileTypes: true }) as Dirent[];
+      return entries
+        .filter(entry => entry.isFile())
+        .map(entry => entry.name);
+    } catch (error) {
+      const errorMessage = ( error instanceof Error ? error.message : 'Unknown error');
+      throw new Error(`Can not read directory: ${errorMessage}`);
+    }
+  }
+
+  async listProjects(): Promise< string[] > {
+    try {
+      await this.ensureDirectoryExists( this.contextRoot );
+      const entries = await this.readdir( this.contextRoot, { withFileTypes: true }) as Dirent[];
+      
+      return  entries
+        .filter(entry => entry.isDirectory())
+        .map(entry => entry.name);
+    } catch (error) {
+      const errorMessage = ( error instanceof Error ? error.message : 'Unknown error');
+      throw new Error(`Can not read projects directory: ${errorMessage}`);
+    }
+  }
   
   async readFile(filePath: string): Promise<string> {
     try {
