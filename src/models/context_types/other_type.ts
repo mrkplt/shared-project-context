@@ -38,7 +38,7 @@ export class OtherType implements ContextType {
     const filePath = `${this.projectName}/${filename}`;
     
     try {
-      await this.persistenceHelper.writeFile(filePath, content);
+      await this.persistenceHelper.writeContent(this.projectName, filename, content);
       return {
         success: true,
         validation
@@ -53,12 +53,13 @@ export class OtherType implements ContextType {
 
   async read(): Promise<PersistenceResponse> {
     const filename = `other_${this.fileName}.md`;
-    const filePath = `${this.projectName}/${filename}`;
 
     try {
-      const content = await this.persistenceHelper.readFile(filePath);
+      const content = await this.persistenceHelper.getContext(this.projectName, filename);
       return {
-        success: true
+        success: true,
+        content: content
+
       };
     } catch (error) {
       return {
@@ -80,15 +81,7 @@ export class OtherType implements ContextType {
     const filePath = `${this.projectName}/${filename}`;
     
     try {
-      // Archive the file first
-      const timestamp = new Date().toISOString().split('T')[0];
-      const archivePath = `${this.projectName}/archives/${timestamp}/${filename}`;
-      
-      // Ensure archive directory exists
-      await this.persistenceHelper.ensureDirectoryExists(`${this.projectName}/archives/${timestamp}`);
-      
-      // Move file to archive
-      await this.persistenceHelper.archive(filePath, archivePath);
+      await this.persistenceHelper.archiveContext(this.projectName, filename);
     } catch (error) {
       if (error instanceof Error) {
         // File doesn't exist, nothing to reset
@@ -126,6 +119,6 @@ export class OtherType implements ContextType {
   }
 
   async listAllContext(): Promise<string[]> {
-    return await this.persistenceHelper.listAllContext(`${this.projectName}/other`);
+    return await this.persistenceHelper.listAllContextForProject(`${this.projectName}/other`);
   }
 }

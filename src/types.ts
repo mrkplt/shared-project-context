@@ -1,4 +1,5 @@
    import { FileSystemHelper } from "./models/context_types/utilities/fileSystem";
+   import { Dirent } from 'fs';
 
    //Used in Handlers
    export interface ContentItem {
@@ -42,3 +43,13 @@
 // template_reference: 'Other type files require explicit naming',
 // retry_instructions: 'Call update_context("other", content, name) with a valid filename'
 // }
+
+export interface PersistenceHelper {
+   listProjects(): Promise<string[]>;
+   initProject(projectName: string): Promise<{success: boolean}>;
+   listAllContextForProject(projectName: string): Promise<string[]>;
+   listAllContextTypes(projectName: string): Promise<string[]>;
+   writeContent(projectName: string, contextName: string, content: string): Promise<{success: boolean}>
+   getContext(projectName: string, contextName: string): Promise<string>;
+   archiveContext(projectName: string, contextType: string, contextName: string): Promise<{success: boolean}>
+ }

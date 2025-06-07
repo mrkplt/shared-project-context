@@ -1,17 +1,9 @@
 import { Dirent } from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import { PersistenceHelper } from '../../../types.js';
 
-export interface FileSystem {
-  readFile: (path: string, encoding: BufferEncoding) => Promise<string>;
-  writeFile: (path: string, content: string) => Promise<void>;
-  mkdir: (path: string, options: { recursive: boolean }) => Promise<void>;
-  appendFile: (path: string, content: string) => Promise<void>;
-  access: (path: string) => Promise<void>;
-  readdir: (path: string, options: { withFileTypes: boolean }) => Promise<Dirent[]>;
-}
-
-export const defaultFileSystem: FileSystem = {
+ const defaultFileSystem = {
   readFile: async (p: string, encoding: BufferEncoding) => {
     if (process.env.NODE_ENV === 'test') {
       const fs = require('fs/promises');
@@ -67,18 +59,29 @@ export const defaultFileSystem: FileSystem = {
   }
 };
 
-export class FileSystemHelper {
+export class FileSystemHelper implements PersistenceHelper {
   contextRoot: string;
   
   constructor(
-    private fs: FileSystem = defaultFileSystem,
+    private fs = defaultFileSystem,
     contextRoot: string = path.join(os.homedir(), '.shared-project-context')
   ) {
     this.contextRoot = contextRoot;
   }
-  async listAllContext(dirPath: string): Promise<string[]> {
+
+  async initProject(projectId: string): Promise<{success: boolean}> {
+    await this.ensureDirectoryExists(
+      await this.getProjectPath(projectId)
+    );
+
+    return {success: true};
+  }
+
+  async listAllContextForProject(projectId: string): Promise<string[]> {
+    const projectPath = await this.getProjectPath(projectId);
+
     try {
-      const entries = await this.readdir(dirPath, { withFileTypes: true }) as Dirent[];
+      const entries = await this.readdir(projectPath, { withFileTypes: true }) as Dirent[];
       return entries
         .filter(entry => entry.isFile())
         .map(entry => entry.name);
@@ -101,9 +104,23 @@ export class FileSystemHelper {
       throw new Error(`Can not read projects directory: ${errorMessage}`);
     }
   }
-  
-  async readFile(filePath: string): Promise<string> {
+
+  async listAllContextTypes(projectId: string): Promise<string[]> {
+    const dirPath = await this.getProjectPath(projectId);
     try {
+      const entries = await this.readdir(dirPath, { withFileTypes: true }) as Dirent[];
+      return entries
+        .filter(entry => entry.isFile())
+        .map(entry => entry.name);
+    } catch (error) {
+      const errorMessage = ( error instanceof Error ? error.message : 'Unknown error');
+      throw new Error(`Can not read directory: ${errorMessage}`);
+    }
+  }
+  
+  async getContext(projectId: string, contextName: string): Promise<string> {
+    try {
+      const filePath = await this.getContextFilePath(projectId, contextName);
       return await this.fs.readFile(filePath, 'utf-8');
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
@@ -112,16 +129,30 @@ export class FileSystemHelper {
       throw error;
     }
   }
-  
-  async writeFile(filePath: string, content: string): Promise<void> {
+
+  async writeContent(projectId: string, fileName: string, content: string): Promise<{success: boolean}> {
+    const filePath = await this.getContextFilePath(projectId, fileName);
     await this.fs.writeFile(filePath, content);
-  }
-  
-  async appendFile(filePath: string, content: string): Promise<void> {
-    await this.fs.appendFile(filePath, content);
+
+    return {success: true};
   }
 
-  async readdir(
+  // This needs to be built
+  async archiveContext(projectName: string, contextType: string, contextName?: string): Promise<{success: boolean}> {
+     // Archive the file first
+     const timestamp = new Date().toISOString().split('T')[0];
+     const projectPath = await this.getProjectPath(projectName);
+     const archivePath = `${projectPath}/archives/${timestamp}/${contextType}`;
+     
+     // Ensure archive directory exists
+     await this.ensureDirectoryExists(`${archivePath}`);
+     
+     // Move file to archive
+     await this.moveFile(`${projectPath}/${contextType}`, `${archivePath}/${contextType}`);
+    return {success: false};
+  }
+
+  private async readdir(
     dirPath: string, 
     options: { withFileTypes: boolean } = { withFileTypes: false }
   ): Promise<string[] | Dirent[]> {
@@ -138,7 +169,7 @@ export class FileSystemHelper {
     }
   }
   
-  async ensureDirectoryExists(directory: string): Promise<void> {
+  private async ensureDirectoryExists(directory: string): Promise<void> {
     try {
       await this.fs.access(directory);
     } catch (error) {
@@ -153,7 +184,7 @@ export class FileSystemHelper {
   //this is bullshit. its just a copy and paste of ensureDirectoryExists. 
   // I made these just to satisfy interface. I need to see if anything else
   // in this file does this.
-  async moveFile(directory: string, targetPath: string): Promise<void> {
+  private async moveFile(directory: string, targetPath: string): Promise<void> {
     try {
       await this.fs.access(directory);
     } catch (error) {
@@ -168,7 +199,7 @@ export class FileSystemHelper {
   //this is bullshit. its just a copy and paste of ensureDirectoryExists. 
   // I made these just to satisfy interface. I need to see if anything else
   // in this file does this.
-  async getFileInfo(directory: string): Promise<void> {
+  private async getFileInfo(directory: string): Promise<void> {
     try {
       await this.fs.access(directory);
     } catch (error) {
@@ -179,37 +210,20 @@ export class FileSystemHelper {
       }
     }
   }
-
-  //this is bullshit. its just a copy and paste of ensureDirectoryExists. 
-  // I made these just to satisfy interface. I need to see if anything else
-  // in this file does this.s
-  async archive(directory: string, archivePath: string): Promise<void> {
-    try {
-      await this.fs.access(directory);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        await this.fs.mkdir(directory, { recursive: true });
-      } else {
-        throw error;
-      }
-    }
+  
+  private async appendFile(filePath: string, content: string): Promise<void> {
+    await this.fs.appendFile(filePath, content);
   }
 
-  async initProject(projectId: string): Promise<void> {
-    await this.ensureDirectoryExists(
-      await this.getProjectPath(projectId)
-    );
-  }
-
-  async listDirectory(directory: string): Promise<Dirent[]> {
+  private async listDirectory(directory: string): Promise<Dirent[]> {
     return this.fs.readdir(directory, { withFileTypes: true });
   }
 
-  async getProjectPath(projectId: string): Promise<string> {
+  private async getProjectPath(projectId: string): Promise<string> {
     return path.join(this.contextRoot, 'projects', projectId);
   }
 
-  async getContextFilePath(projectId: string, contextType: string, name?: string): Promise<string> {
+  private async getContextFilePath(projectId: string, contextType: string, name?: string): Promise<string> {
     const projectPath = await this.getProjectPath(projectId)
     await this.ensureDirectoryExists(projectPath);
 
