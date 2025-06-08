@@ -3,7 +3,7 @@ import  ContextTypeFactory  from '../models/contexTypeFactory';
 import { ContentItem } from '../types';
 
 interface GetContextArgs {
-  projectId: string;
+  projectName: string;
   contextType: string;
   fileName?: string;
 }
@@ -19,7 +19,7 @@ class GetContextHandler {
 
   async handle(args: GetContextArgs): Promise<{ content: ContentItem[] }> {
     const contextType = ContextTypeFactory({
-      projectName: args.projectId,
+      projectName: args.projectName,
       persistenceHelper: this.fsHelper,
       contextType: args.contextType,
       fileName: args.fileName || args.contextType

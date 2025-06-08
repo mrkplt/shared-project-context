@@ -70,16 +70,16 @@ export class FileSystemHelper implements PersistenceHelper {
     this.contextRoot = contextRoot;
   }
 
-  async initProject(projectId: string): Promise<persistenceResponse> {
+  async initProject(projectName: string): Promise<persistenceResponse> {
     await this.ensureDirectoryExists(
-      await this.getProjectPath(projectId)
+      await this.getProjectPath(projectName)
     );
 
     return {success: true};
   }
 
-  async listAllContextForProject(projectId: string): Promise<string[]> {
-    const projectPath = await this.getProjectPath(projectId);
+  async listAllContextForProject(projectName: string): Promise<string[]> {
+    const projectPath = await this.getProjectPath(projectName);
 
     try {
       const entries = await this.readdir(projectPath, { withFileTypes: true }) as Dirent[];
@@ -106,8 +106,8 @@ export class FileSystemHelper implements PersistenceHelper {
     }
   }
 
-  async listAllContextTypes(projectId: string): Promise<string[]> {
-    const dirPath = await this.getProjectPath(projectId);
+  async listAllContextTypes(projectName: string): Promise<string[]> {
+    const dirPath = await this.getProjectPath(projectName);
     try {
       const entries = await this.readdir(dirPath, { withFileTypes: true }) as Dirent[];
       return entries
@@ -119,9 +119,9 @@ export class FileSystemHelper implements PersistenceHelper {
     }
   }
   
-  async getContext(projectId: string, contextName: string): Promise<string> {
+  async getContext(projectName: string, contextName: string): Promise<string> {
     try {
-      const filePath = await this.getContextFilePath(projectId, contextName);
+      const filePath = await this.getContextFilePath(projectName, contextName);
       return await this.fs.readFile(filePath, 'utf-8');
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
@@ -230,12 +230,12 @@ export class FileSystemHelper implements PersistenceHelper {
     return this.fs.readdir(directory, { withFileTypes: true });
   }
 
-  private async getProjectPath(projectId: string): Promise<string> {
-    return path.join(this.contextRoot, 'projects', projectId);
+  private async getProjectPath(projectName: string): Promise<string> {
+    return path.join(this.contextRoot, 'projects', projectName);
   }
 
-  private async getContextFilePath(projectId: string, contextType: string, name?: string): Promise<string> {
-    const projectPath = await this.getProjectPath(projectId)
+  private async getContextFilePath(projectName: string, contextType: string, name?: string): Promise<string> {
+    const projectPath = await this.getProjectPath(projectName)
     await this.ensureDirectoryExists(projectPath);
 
     switch (contextType) {

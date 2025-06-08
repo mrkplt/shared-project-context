@@ -27,8 +27,9 @@ export class SessionSummaryType implements ContextType {
   }
 
   async update(content: string): Promise<PersistenceResponse> {
+    const timestampedContent = `## ${new Date().toISOString()}\n${content}`;
     const result = await this.persistenceHelper.writeContext(
-      this.projectName, this.directoryName, this.fileName, content
+      this.projectName, this.directoryName, timestampedContent, content
     );
      
     if (!result.success) {

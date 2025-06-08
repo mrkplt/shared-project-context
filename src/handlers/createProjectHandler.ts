@@ -10,9 +10,9 @@ class CreateProjectHandler {
     this.fsHelper = fsHelper;
     }
 
-  async handle(projectId: string): Promise<{ content: ContentItem[] }> {
+  async handle(projectName: string): Promise<{ content: ContentItem[] }> {
     try {
-      await this.fsHelper.initProject(projectId);
+      await this.fsHelper.initProject(projectName);
       return {
         content: [{
           type: 'text',

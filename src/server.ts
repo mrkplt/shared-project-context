@@ -132,7 +132,7 @@ When working with this server, start by listing projects to discover what's avai
             case 'get_context':
               return await this.getContextHandler.handle(
                 args as { 
-                  projectId: string; 
+                  projectName: string; 
                   contextType: string;
                   name?: string; 
                 });
@@ -140,7 +140,7 @@ When working with this server, start by listing projects to discover what's avai
             case 'update_context':
               return await this.updateContextHandler.handle(
                 args as { 
-                  projectId: string;
+                  projectName: string;
                   contextType: string;
                   content: string;
                   name?: string;
@@ -148,7 +148,7 @@ When working with this server, start by listing projects to discover what's avai
               );
 
             case 'create_project':
-              return await this.createProjectHandler.handle(args.projectId as string);
+              return await this.createProjectHandler.handle(args.projectName as string);
               
             default:
               throw new Error(`Unknown tool: ${name}`);

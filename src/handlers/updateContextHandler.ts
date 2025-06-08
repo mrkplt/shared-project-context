@@ -3,10 +3,10 @@ import  ContextTypeFactory from '../models/contexTypeFactory';
 import { ContentItem } from '../types';
 
 interface UpdateContextArgs {
-  projectId: string;
+  projectName: string;
   contextType: string;
   content: string;
-  fileName?: string; // For 'other' type files
+  contextName?: string; // For 'other' type files
 }
 
 class UpdateContextHandler {
@@ -19,40 +19,32 @@ class UpdateContextHandler {
   }
 
   async handle(args: UpdateContextArgs): Promise<{ content: ContentItem[] }> {
-    if (args.contextType === 'other' && !args.fileName) {
-      throw new Error('File name is required for type "other"');
-    }
+    if (args.contextType === 'other' && !args.contextName) throw new Error('File name is required for type "other"');
 
     const contextType = ContextTypeFactory({
-      projectName: args.projectId,
+      projectName: args.projectName,
       persistenceHelper: this.fsHelper,
       contextType: args.contextType,
-      fileName: args.fileName || args.contextType
+      fileName: args.contextName || args.contextType
     });
 
-    try {
-      const filePath = await this.fsHelper.getContextFilePath(args.projectId, args.contextType, args.fileName);
-
-      // Determine write behavior based on file type
-      if (args.contextType === 'session_summary') {
-        // For session_summary, append with timestamp
-        const timestampedContent = `\n\n## ${new Date().toISOString()}\n${args.content}`;
-        await contextType.persistenceHelper.appendFile(filePath, timestampedContent);
-      } else {
-        // For other types, replace the entire content
-        await contextType.persistenceHelper.writeFile(filePath, args.content);
-      }
-
+    const result = await contextType.update(args.content)
+  
+    if (result.success) {  
       return {
         content: [{
           type: 'text',
           text: 'Context updated successfully'
         }]
       };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      throw new Error(`Failed to update context: ${errorMessage}`);
     }
+
+    return {
+      content: [{
+        type: 'text',
+        text: result.errors?.join('\n') || 'An unknown error occurred'
+      }]
+    };
   }
 }
 
