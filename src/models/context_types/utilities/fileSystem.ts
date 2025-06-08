@@ -5,62 +5,6 @@ import fs from 'fs/promises';
 import { PersistenceHelper } from '../../../types.js';
 import { PersistenceResponse } from '../../../types.js';
 
-//  const defaultFileSystem = {
-//   readFile: async (p: string, encoding: BufferEncoding) => {
-//     if (process.env.NODE_ENV === 'test') {
-//       const fs = require('fs/promises');
-//       return fs.readFile(p, encoding);
-//     }
-//     const fs = await import('fs/promises');
-//     return fs.readFile(p, encoding);
-//   },
-  
-//   writeFile: async (p: string, content: string) => {
-//     if (process.env.NODE_ENV === 'test') {
-//       const fs = require('fs/promises');
-//       return fs.writeFile(p, content, 'utf-8');
-//     }
-//     const fs = await import('fs/promises');
-//     return fs.writeFile(p, content, 'utf-8');
-//   },
-  
-//   appendFile: async (p: string, content: string) => {
-//     if (process.env.NODE_ENV === 'test') {
-//       const fs = require('fs/promises');
-//       return fs.appendFile(p, content, 'utf-8');
-//     }
-//     const fs = await import('fs/promises');
-//     return fs.appendFile(p, content, 'utf-8');
-//   },
-  
-//   mkdir: async (p: string, options: { recursive: boolean }) => {
-//     if (process.env.NODE_ENV === 'test') {
-//       const fs = require('fs/promises');
-//       return fs.mkdir(p, options);
-//     }
-//     const fs = await import('fs/promises');
-//     return fs.mkdir(p, options);
-//   },
-  
-//   access: async (p: string) => {
-//     if (process.env.NODE_ENV === 'test') {
-//       const fs = require('fs/promises');
-//       return fs.access(p);
-//     }
-//     const fs = await import('fs/promises');
-//     return fs.access(p);
-//   },
-  
-//   readdir: async (p: string, options: { withFileTypes: boolean }) => {
-//     if (process.env.NODE_ENV === 'test') {
-//       const fs = require('fs/promises');
-//       return fs.readdir(p, { ...options, withFileTypes: true });
-//     }
-//     const fs = await import('fs/promises');
-//     return fs.readdir(p, { ...options, withFileTypes: true });
-//   }
-// };
-
 export class FileSystemHelper implements PersistenceHelper {
   contextRoot: string;
   
@@ -82,12 +26,15 @@ export class FileSystemHelper implements PersistenceHelper {
     }
   }
 
+  private async onlyContextNamesFromDirectory(entries: Dirent[]): Promise<string[]> {
+    return entries.filter(entry => entry.isFile()).map(entry => entry.name.split('.')[0]).filter(name => name !== '')
+  }
+
   async listAllContextForProject(projectName: string): Promise<PersistenceResponse> {
     const projectPath = await this.getProjectPath(projectName);
-
     try {
-      const entries = await this.readDirectory(projectPath, { withFileTypes: true }) as Dirent[];
-      return { success: true, data: entries.filter(entry => entry.isFile()).map(entry => entry.name) }
+      const entries = await this.readDirectory(projectPath, { withFileTypes: true, recursive: true }) as Dirent[];
+      return { success: true, data: await this.onlyContextNamesFromDirectory(entries) }
     } catch (error) {
       const errorMessage = ( error instanceof Error ? error.message : 'Unknown error');
       return { success: false, errors: [errorMessage] };
@@ -109,7 +56,7 @@ export class FileSystemHelper implements PersistenceHelper {
     const dirPath = await this.getProjectPath(projectName);
     try {
       const entries = await this.readDirectory(dirPath, { withFileTypes: true }) as Dirent[];
-      return {success: true, data: entries.filter(entry => entry.isFile()).map(entry => entry.name)}
+      return {success: true, data: await this.onlyContextNamesFromDirectory(entries)}
     } catch (error) {
       const errorMessage = ( error instanceof Error ? error.message : 'Unknown error');
       return { success: false, errors: [errorMessage] };
@@ -147,7 +94,7 @@ export class FileSystemHelper implements PersistenceHelper {
     return {success: false};
   }
 
-  private async readDirectory(dirPath: string, options: { withFileTypes: boolean } = { withFileTypes: true }): Promise<string[] | Dirent[]> {
+  private async readDirectory(dirPath: string, options: { withFileTypes: boolean, recursive?: boolean } = { withFileTypes: true }): Promise<string[] | Dirent[]> {
     try {
       const entries = await fs.readdir(dirPath, { ...options, withFileTypes: true });
       return options.withFileTypes 

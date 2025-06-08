@@ -61,10 +61,19 @@ export class SessionSummaryType implements ContextType {
         };
       }
       
-      const sessionSummaryFiles = result.data
-        .filter((fileName: string) => fileName.startsWith('session_summary/'))
-        .map((fileName: string) => fileName.replace('session_summary/', ''))
-        .sort().reverse() || [];
+      const sessionSummaryFiles = (result.data || [])
+        .filter((fileName: string) => {
+          // Handle both formats: 'session_summary/...' and '...' (root level files)
+          const baseName = fileName.includes('/') 
+            ? fileName.split('/').pop() || '' 
+            : fileName;
+          // Only include files that match the session summary pattern (date-based)
+          return /^\d{4}-\d{2}-\d{2}(-\d{2}-\d{2}-\d{2}(-\d+)?)?$/.test(baseName.split('.')[0]);
+        })
+        .sort((a: string, b: string) => {
+          // Sort by the full path to ensure consistent ordering
+          return b.localeCompare(a);
+        });
       
       // Read and concatenate all files
       let combinedContent = '';
