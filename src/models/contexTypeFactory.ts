@@ -3,13 +3,14 @@ import { MentalModelType } from './context_types/mental_model_type';
 import { FeaturesType } from './context_types/features_type';
 import { OtherType } from './context_types/other_type';
 import { FileSystemHelper } from './context_types/utilities/fileSystem';
-import { ContextType } from '../types.js';
+import { ContextType, ContextTypeArgs } from '../types.js';
 
 interface ContextTypeFactoryArgs {
     projectName: string;
     persistenceHelper: FileSystemHelper;
     contextType: string;
-    fileName: string;
+    contextName: string;
+    content?: string;
 }
 
 export const typeMap = {
@@ -19,14 +20,14 @@ export const typeMap = {
     other: OtherType
 } as const;
 
- export default function contextTypeFactory(args: ContextTypeFactoryArgs): ContextType {
-    const { persistenceHelper, projectName, contextType, fileName } = args;
+export default function contextTypeFactory(args: ContextTypeFactoryArgs): ContextType {
+    const { persistenceHelper, projectName, contextType, contextName, content } = args;
     const TypeClass = typeMap[contextType as keyof typeof typeMap];
         
-    // For other types, pass the fileName option if provided
-    return new TypeClass(
+    return new TypeClass({
         persistenceHelper,
         projectName,
-        (contextType || fileName)
-    );
+        contextName,
+        content
+    });
 }

@@ -1,4 +1,4 @@
-import { ValidationResponse, ContextType, ContexTypeResponse, PersistenceResponse } from '../../types.js';
+import { ValidationResponse, ContextType, ContexTypeResponse, PersistenceResponse, ContextTypeArgs } from '../../types.js';
 import { FileSystemHelper } from './utilities/fileSystem.js';
 
 export class OtherType implements ContextType {
@@ -6,100 +6,108 @@ export class OtherType implements ContextType {
   
   public readonly persistenceHelper: FileSystemHelper;
   private readonly projectName: string;
-  private readonly fileName: string;
+  private readonly contextName: string | undefined;
+  private readonly content: string | undefined;
 
   /**
    * Creates a new OtherType instance for handling arbitrary file types
    * @param projectName - Name of the project this context belongs to
    * @param persistenceHelper - Helper for file system operations
    */
-  constructor(
-    persistenceHelper: FileSystemHelper,
-    projectName: string,
-    fileName: string
-  ) {
-    this.persistenceHelper = persistenceHelper;
-    this.projectName = projectName;
-    this.fileName = fileName;
+  constructor(args: ContextTypeArgs) {
+    this.persistenceHelper = args.persistenceHelper;
+    this.projectName = args.projectName;
+    this.contextName = args.contextName;
+    this.content = args.content;
   }
 
-  async update(content: string): Promise<ContexTypeResponse> {
-    // Add Validation Behavior here that sets ValidationResponse
-    const validation = this.validate(content);
-    if (!validation.isValid) {
+  async update(): Promise<ContexTypeResponse> {
+    if (!this.contextName) {
       return {
         success: false,
-        validation,
-        errors: ['Content validation failed']
+        errors: ['Context name is required to update other type']
       };
     }
-
-    const filename = `${OtherType.FILE_PREFIX}${this.fileName}.md`;
-    const filePath = `${this.projectName}/${filename}`;
+    if (!this.content) {
+      return {
+        success: false,
+        errors: ['Content is required to update other type']
+      };
+    }
+    const result = await this.persistenceHelper.writeContext(
+      this.projectName, 
+      'other', 
+      this.contextName, 
+      this.content
+    );
     
-    try {
-      await this.persistenceHelper.writeContent(this.projectName, filename, content);
-      return {
-        success: true,
-        validation
-      };
-    } catch (error) {
+    if (!result.success) {
       return {
         success: false,
-        errors: [`Failed to write file: ${error instanceof Error ? error.message : 'Unknown error'}`]
+        errors: result.errors
       };
     }
-  }
-
-  async read(): Promise<ContexTypeResponse> {
-    const filename = `other_${this.fileName}.md`;
-
-    try {
-      const content = await this.persistenceHelper.getContext(this.projectName, filename);
-      return {
-        success: true,
-        content: content
-
-      };
-    } catch (error) {
-      return {
-        success: false,
-        errors: [`Failed to read file: ${error instanceof Error ? error.message : 'Unknown error'}`]
-      };
-    }
-  }
-
-  async reset(name?: string): Promise<ContexTypeResponse> {
-    if (!name) {
-      return {
-        success: false,
-        errors: ['Name parameter is required for other type']
-      };
-    }
-
-    const filename = `other_${name}.md`;
-    const filePath = `${this.projectName}/${filename}`;
-    
-    try {
-      await this.persistenceHelper.archiveContext(this.projectName, filename);
-    } catch (error) {
-      if (error instanceof Error) {
-        // File doesn't exist, nothing to reset
-        return {
-          success: false,
-          errors: [`Failed to reset file: ${error instanceof Error ? error.message : 'Unknown error'}`]
-        };
-      }
-    }
-
     return {
       success: true
     };
   }
 
-  validate(content: string): ValidationResponse {
-    // Minimal validation for other type
-    const trimmedContent = content.trim();
+  async read(): Promise<ContexTypeResponse> {
+    if (!this.contextName) {
+      return {
+        success: false,
+        errors: ['Context name is required to read other type']
+      };
+    }
+
+    const result = await this.persistenceHelper.getContext(this.projectName, 'other', this.contextName);
+    if (!result.success) {
+      return {
+        success: false,
+        errors: result.errors
+      };
+    }
+    return {
+      success: true,
+      content: result.data?.join('\n') || ''
+    };
+  }
+
+  async reset(): Promise<ContexTypeResponse> {
+    if (this.contextName) {
+      return {
+        success: false,
+        errors: ['Name parameter is required for other type']
+      };
+    }
+  
+    const result = await this.persistenceHelper.archiveContext(this.projectName, 'other', this.contextName);
+    if (!result.success) {
+      return {
+        success: false,
+        errors: result.errors
+      };
+    }
+    return {
+      success: true
+    };
+  }
+
+  validate(): ValidationResponse {
+    if (!this.content) {
+      return {
+        isValid: false,
+        validationErrors: [
+          'insufficient_content', 'Content is required to validate other type', 'error'
+        ],
+        correctionGuidance: [
+          '1. Add meaningful content to your file',
+          '2. Include relevant information for your use case',
+          '3. Ensure content is not just whitespace'
+        ]
+      };
+    }
+    const trimmedContent = this.content.trim();
      
     if (trimmedContent.length === 0) {
       return {
@@ -118,7 +126,17 @@ export class OtherType implements ContextType {
     return { isValid: true };
   }
 
-  async listAllContext(): Promise<string[]> {
-    return await this.persistenceHelper.listAllContextForProject(`${this.projectName}/other`);
+  async listAllContext(): Promise<PersistenceResponse> {
+    const result = await this.persistenceHelper.listAllContextForProject(this.projectName);
+    if (!result.success) {
+      return {
+        success: false,
+        errors: result.errors
+      };
+    }
+    return {
+      success: true,
+      data: result.data
+    };
   }
 }

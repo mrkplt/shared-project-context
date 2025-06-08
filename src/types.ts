@@ -14,6 +14,14 @@
     correctionGuidance?: string[];
    }
 
+
+   export interface ContextTypeArgs {
+      persistenceHelper: FileSystemHelper,
+      projectName: string,
+      contextName?: string,
+      content?: string
+   }
+    
    export interface ContexTypeResponse {   
     success: boolean;
     content?: string;
@@ -23,10 +31,10 @@
 
    // Context Type Interface
    export interface ContextType {
-      update(content: string): Promise<ContexTypeResponse>;
+      update(): Promise<ContexTypeResponse>;
       read(): Promise<ContexTypeResponse>;
       reset(): Promise<ContexTypeResponse>;
-      validate(content: string): ValidationResponse;
+      validate(): ValidationResponse;
       persistenceHelper: FileSystemHelper;
    }
 
@@ -55,6 +63,6 @@ export interface PersistenceHelper {
    listAllContextForProject(projectName: string): Promise<PersistenceResponse>;
    listAllContextTypes(projectName: string): Promise<PersistenceResponse>;
    writeContext(projectName: string, contextType: string, contextName: string, content: string): Promise<PersistenceResponse>
-   getContext(projectName: string, contextName: string): Promise<PersistenceResponse>;
+   getContext(projectName: string, contextType: string, contextName: string): Promise<PersistenceResponse>;
    archiveContext(projectName: string, contextType: string, contextName: string): Promise<PersistenceResponse>
 }

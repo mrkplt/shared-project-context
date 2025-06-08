@@ -1,80 +1,89 @@
-import { ValidationResponse, ContextType, PersistenceResponse, ContexTypeResponse } from '../../types.js';
-import { Dirent } from 'fs';
+import { ValidationResponse, ContextType, ContexTypeResponse, ContextTypeArgs } from '../../types.js';
+
 import { FileSystemHelper } from './utilities/fileSystem.js';
 
 export class SessionSummaryType implements ContextType {
-  private static readonly DEFAULT_FILE_NAME = 'session_summary';
-  private readonly directoryName = 'session_summary';
+  private static readonly DEFAULT_FILE_NAME = 'session_summary'
   private readonly archiveBasePath = 'archives/session_summary';
   public readonly persistenceHelper: FileSystemHelper;
   private readonly projectName: string;
-  private readonly fileName: string;
-  private validationResponse: ValidationResponse; 
+  private readonly contextName: string;
+  private content: string | undefined;
 
-  constructor(
-    persistenceHelper: FileSystemHelper,
-    projectName: string,
-    fileName?: string
-  ) {
-    this.persistenceHelper = persistenceHelper;
-    this.projectName = projectName;
-    this.fileName = SessionSummaryType.DEFAULT_FILE_NAME || fileName;  // Disregard fileName if provided
-    this.validationResponse = {
-      isValid: false,
-      validationErrors: [],
-      correctionGuidance: []
-    };
+  constructor(args: ContextTypeArgs) {
+    this.persistenceHelper = args.persistenceHelper;
+    this.projectName = args.projectName;
+    this.contextName = SessionSummaryType.DEFAULT_FILE_NAME || args.contextName;  // Disregard fileName if provided
+    this.content = args.content;
   }
 
-  async update(content: string): Promise<ContexTypeResponse> {
-    const timestampedContent = `## ${new Date().toISOString()}\n${content}`;
-    const result: PersistenceResponse = await this.persistenceHelper.writeContext(
-      this.projectName, this.directoryName, timestampedContent, content
+  async update(): Promise<ContexTypeResponse> {
+    if (!this.content) {
+      return {
+        success: false,
+        errors: ['Content is required to update session summary']
+      };
+    }
+
+    const result = await this.persistenceHelper.writeContext(
+      this.projectName, 
+      'session_summary', 
+      this.generateTimestampedContextName(), 
+      this.content
     );
      
     if (!result.success) {
       return {
         success: false,
-        errors: result.errors,
-        validation: this.validationResponse
+        errors: result.errors
       };
     }
 
     return { success: true };
   }
   
-  async read(_name?: string): Promise<ContexTypeResponse> {
-    const sessionSummaryDir = this.getSessionSummaryDir();
-    
+  async read(): Promise<ContexTypeResponse> {
     try {
-      // Check if directory exists
-      try {
-        await this.persistenceHelper.getFileInfo(sessionSummaryDir);
-      } catch (error) {
-        // Directory doesn't exist, return empty content
-        return { success: true, content: '' };
+      // List all context files for the project
+      const result = await this.persistenceHelper.listAllContextForProject(this.projectName);
+      
+      if (!result.success) {
+        return {
+          success: false,
+          errors: result.errors
+        };
       }
       
-      // List all files in the directory
-      const files = await this.persistenceHelper.listDirectory(sessionSummaryDir);
+      if (!result.data) {
+        return {
+          success: false,
+          errors: ['No session summary files found']
+        };
+      }
       
-      // Filter out directories and sort files by name (timestamp) in descending order
-      const sortedFiles = files
-        .filter((file: Dirent ) => !file.isDirectory)
-        .sort((a: Dirent, b: Dirent) => b.name.localeCompare(a.name));
+      const sessionSummaryFiles = result.data
+        .filter((fileName: string) => fileName.startsWith('session_summary/'))
+        .map((fileName: string) => fileName.replace('session_summary/', ''))
+        .sort().reverse() || [];
       
       // Read and concatenate all files
       let combinedContent = '';
-      for (const file of sortedFiles) {
+      for (const fileName of sessionSummaryFiles) {
         try {
-          const filePath = `${sessionSummaryDir}/${file.name}`;
-          const content = await this.persistenceHelper.readFile(filePath);
-          if (combinedContent) {
-            combinedContent += '\n\n---\n\n'; // Add separator between entries
+          const fileResult = await this.persistenceHelper.getContext(
+            this.projectName,
+            'session_summary',
+            fileName.replace(/\.md$/, '') // Remove .md extension for context name
+          );
+          
+          if (fileResult.success && fileResult.data?.length > 0) {
+            if (combinedContent) {
+              combinedContent += '\n\n---\n\n'; // Add separator between entries
+            }
+            combinedContent += `# ${fileName.replace(/\.md$/, '')}\n\n${fileResult.data[0]}`;
           }
-          combinedContent += `# ${file.name.replace(/\.md$/, '')}\n\n${content}`;
         } catch (error) {
-          console.error(`Error reading file ${file.name}:`, error);
+          console.error(`Error reading file ${fileName}:`, error);
           // Continue with next file even if one fails
         }
       }
@@ -83,7 +92,6 @@ export class SessionSummaryType implements ContextType {
     } catch (error) {
       return {
         success: false,
-        content: '',
         errors: [`Failed to read session summaries: ${error instanceof Error ? error.message : 'Unknown error'}`]
       };
     }
@@ -130,8 +138,8 @@ export class SessionSummaryType implements ContextType {
     }
   }
 
-  validate(content: string): ValidationResponse {
-    const trimmedContent = content.trim();
+  validate(): ValidationResponse {
+    const trimmedContent = this.content?.trim() || '';
     
     if (trimmedContent.length === 0) {
       return {
@@ -152,15 +160,11 @@ export class SessionSummaryType implements ContextType {
     return { isValid: true };
   }
 
-  private getSessionSummaryDir(): string {
-    return `${this.projectName}/${this.directoryName}`;
-  }
-
-  private generateTimestampedFileName(): string {
+  private generateTimestampedContextName(): string {
     // ISO string with millisecond precision, no timezone
     const now = new Date();
     const isoString = now.toISOString();
     // Remove timezone and colons from time
-    return `${this.fileName}-${isoString.replace(/\.\d+Z$/, '').replace(/[:.]/g, '-')}.md`;
+    return `${this.contextName}-${isoString.replace(/\.\d+Z$/, '').replace(/[:.]/g, '-')}`;
   }
 }

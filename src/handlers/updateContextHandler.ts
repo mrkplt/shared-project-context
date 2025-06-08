@@ -19,16 +19,14 @@ class UpdateContextHandler {
   }
 
   async handle(args: UpdateContextArgs): Promise<{ content: ContentItem[] }> {
-    if (args.contextType === 'other' && !args.contextName) throw new Error('File name is required for type "other"');
-
     const contextType = ContextTypeFactory({
       projectName: args.projectName,
       persistenceHelper: this.fsHelper,
       contextType: args.contextType,
-      fileName: args.contextName || args.contextType
+      contextName: args.contextName || args.contextType
     });
 
-    const result = await contextType.update(args.content)
+    const result = await contextType.update()
   
     if (result.success) {  
       return {

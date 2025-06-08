@@ -1,4 +1,4 @@
-import { ValidationResponse, ContextType, ContexTypeResponse, PersistenceResponse } from '../../types.js';
+import { ValidationResponse, ContextType, ContexTypeResponse, PersistenceResponse, ContextTypeArgs } from '../../types.js';
 import { FileSystemHelper } from './utilities/fileSystem.js';
 
 export class FeaturesType implements ContextType {
@@ -7,32 +7,37 @@ export class FeaturesType implements ContextType {
   public readonly persistenceHelper: FileSystemHelper;
   private readonly projectName: string;
   private readonly contextName: string;
+  private readonly content: string | undefined;
 
-  constructor(
-    persistenceHelper: FileSystemHelper,
-    projectName: string,
-    contextName?: string
-  ) {
-    this.persistenceHelper = persistenceHelper;
-    this.projectName = projectName;
-    this.contextName = FeaturesType.DEFAULT_FILE_NAME || contextName; // Disregard contextName if provided
+  constructor(args: ContextTypeArgs) {
+    this.persistenceHelper = args.persistenceHelper;
+    this.projectName = args.projectName;
+    this.contextName = FeaturesType.DEFAULT_FILE_NAME || args.contextName; // Disregard contextName if provided
+    this.content = args.content;
   }
 
-  async update(content: string): Promise<ContexTypeResponse> {
-      const result = await this.persistenceHelper.writeContext(
-        this.projectName, this.contextName, this.contextName, content
-      );
+  async update(): Promise<ContexTypeResponse> {
+    if (!this.content) {
+      return {
+        success: false,
+        errors: ['Content is required to update features']
+      };
+    }
 
-      if (!result.success) {
-        return { success: false, errors: result.errors };
-      }
-      
-      return { success: true };
+    const result = await this.persistenceHelper.writeContext(
+      this.projectName, 'features', 'features', this.content
+    );
+
+    if (!result.success) {
+      return { success: false, errors: result.errors };
+    }
+    
+    return { success: true };
   }
 
   async read(): Promise<ContexTypeResponse> {
     const result: PersistenceResponse = 
-      await this.persistenceHelper.getContext(this.projectName, this.contextName);
+      await this.persistenceHelper.getContext(this.projectName, 'features', this.contextName);
 
     if (!result.success) {
       return { success: false, errors: result.errors };
@@ -58,8 +63,8 @@ export class FeaturesType implements ContextType {
     return { success: true };
 }
 
-  validate(content: string): ValidationResponse {
-    const trimmedContent = content.trim();
+  validate(): ValidationResponse {
+    const trimmedContent = this.content?.trim() || '';
     
     if (trimmedContent.length === 0) {
       return {

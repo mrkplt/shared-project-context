@@ -1,4 +1,4 @@
-import { ValidationResponse, ContextType, ContexTypeResponse, PersistenceResponse } from '../../types.js';
+import { ValidationResponse, ContextType, ContexTypeResponse, PersistenceResponse, ContextTypeArgs } from '../../types.js';
 import { FileSystemHelper } from './utilities/fileSystem.js';
 
 export class MentalModelType implements ContextType {
@@ -7,58 +7,40 @@ export class MentalModelType implements ContextType {
   public readonly persistenceHelper: FileSystemHelper;
   private readonly projectName: string;
   private readonly contextName: string;
+  private readonly content: string | undefined;
 
-  constructor(
-    persistenceHelper: FileSystemHelper,
-    projectName: string,
-    contextName?: string
-  ) {
-    this.persistenceHelper = persistenceHelper;
-    this.projectName = projectName;
-    this.contextName = MentalModelType.DEFAULT_FILE_NAME || contextName; // Disregard contextName if provided
+  constructor(args: ContextTypeArgs) {
+    this.persistenceHelper = args.persistenceHelper;
+    this.projectName = args.projectName;
+    this.contextName = MentalModelType.DEFAULT_FILE_NAME || args.contextName; // Disregard contextName if provided
+    this.content = args.content;
   }
 
-  private validateName(name?: string): ValidationResponse {
-    if (name && name !== 'mental_model') {
+  async update(): Promise<ContexTypeResponse> {
+    if (!this.content) {
       return {
-        isValid: false,
-        validationErrors: ['invalid_name', 'If provided, name must be "mental_model"'],
-        correctionGuidance: [
-          '1. Remove the name parameter, or',
-          '2. Set the name parameter to "mental_model"'
-        ]
+        success: false,
+        errors: ['Content is required to update mental model']
       };
     }
-    return { isValid: true };
-  }
 
-  async update(content: string): Promise<ContexTypeResponse> {
     const result = await this.persistenceHelper.writeContext(
       this.projectName, 
-      this.contextName, 
-      this.contextName, 
-      content
+      'mental_model', 
+      'mental_model', 
+      this.content
     );
 
     if (!result.success) {
       return { success: false, errors: result.errors };
     }
-    
+
     return { success: true };
   }
 
-  async read(_name?: string): Promise<ContexTypeResponse> {
-    const nameValidation = this.validateName(_name);
-    if (!nameValidation.isValid) {
-      return {
-        success: false,
-        content: '',
-        errors: [nameValidation.validationErrors?.join(' - ') || 'Invalid name parameter']
-      };
-    }
-
+  async read(): Promise<ContexTypeResponse> {
     const result: PersistenceResponse = 
-      await this.persistenceHelper.getContext(this.projectName, this.contextName);
+      await this.persistenceHelper.getContext(this.projectName, 'mental_model', this.contextName);
 
     if (!result.success) {
       return { success: false, errors: result.errors };
@@ -84,8 +66,8 @@ export class MentalModelType implements ContextType {
     return { success: true };
   }
 
-  validate(content: string): ValidationResponse {
-    const trimmedContent = content.trim();
+  validate(): ValidationResponse {
+    const trimmedContent = this.content?.trim() || '';
     
     if (trimmedContent.length === 0) {
       return {

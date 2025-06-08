@@ -65,7 +65,6 @@ export class FileSystemHelper implements PersistenceHelper {
   contextRoot: string;
   
   constructor(
-    // private fs = defaultFileSystem,
     contextRoot: string = path.join(os.homedir(), '.shared-project-context')
   ) {
     this.contextRoot = contextRoot;
@@ -117,7 +116,7 @@ export class FileSystemHelper implements PersistenceHelper {
     }
   }
   
-  async getContext(projectName: string, contextName: string): Promise<PersistenceResponse> {
+  async getContext(projectName: string, contextType: string, contextName: string): Promise<PersistenceResponse> {
     try {
       const filePath = await this.getContextFilePath(projectName, contextName);
       return { success: true, data: [await fs.readFile(filePath, 'utf-8')]}

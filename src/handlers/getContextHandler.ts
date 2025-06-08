@@ -22,7 +22,7 @@ class GetContextHandler {
       projectName: args.projectName,
       persistenceHelper: this.fsHelper,
       contextType: args.contextType,
-      fileName: args.fileName || args.contextType
+      contextName: args.fileName || args.contextType
     });
 
     try {
