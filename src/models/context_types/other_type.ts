@@ -1,4 +1,4 @@
-import { ValidationResponse, ContextType, PersistenceResponse } from '../../types.js';
+import { ValidationResponse, ContextType, ContexTypeResponse, PersistenceResponse } from '../../types.js';
 import { FileSystemHelper } from './utilities/fileSystem.js';
 
 export class OtherType implements ContextType {
@@ -23,7 +23,7 @@ export class OtherType implements ContextType {
     this.fileName = fileName;
   }
 
-  async update(content: string): Promise<PersistenceResponse> {
+  async update(content: string): Promise<ContexTypeResponse> {
     // Add Validation Behavior here that sets ValidationResponse
     const validation = this.validate(content);
     if (!validation.isValid) {
@@ -51,7 +51,7 @@ export class OtherType implements ContextType {
     }
   }
 
-  async read(): Promise<PersistenceResponse> {
+  async read(): Promise<ContexTypeResponse> {
     const filename = `other_${this.fileName}.md`;
 
     try {
@@ -69,7 +69,7 @@ export class OtherType implements ContextType {
     }
   }
 
-  async reset(name?: string): Promise<PersistenceResponse> {
+  async reset(name?: string): Promise<ContexTypeResponse> {
     if (!name) {
       return {
         success: false,

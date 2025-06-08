@@ -1,4 +1,4 @@
-import { ValidationResponse, ContextType, PersistenceResponse } from '../../types.js';
+import { ValidationResponse, ContextType, PersistenceResponse, ContexTypeResponse } from '../../types.js';
 import { Dirent } from 'fs';
 import { FileSystemHelper } from './utilities/fileSystem.js';
 
@@ -26,9 +26,9 @@ export class SessionSummaryType implements ContextType {
     };
   }
 
-  async update(content: string): Promise<PersistenceResponse> {
+  async update(content: string): Promise<ContexTypeResponse> {
     const timestampedContent = `## ${new Date().toISOString()}\n${content}`;
-    const result = await this.persistenceHelper.writeContext(
+    const result: PersistenceResponse = await this.persistenceHelper.writeContext(
       this.projectName, this.directoryName, timestampedContent, content
     );
      
@@ -43,7 +43,7 @@ export class SessionSummaryType implements ContextType {
     return { success: true };
   }
   
-  async read(_name?: string): Promise<PersistenceResponse> {
+  async read(_name?: string): Promise<ContexTypeResponse> {
     const sessionSummaryDir = this.getSessionSummaryDir();
     
     try {
@@ -89,7 +89,7 @@ export class SessionSummaryType implements ContextType {
     }
   }
 
-  async reset(_name?: string): Promise<PersistenceResponse> {
+  async reset(_name?: string): Promise<ContexTypeResponse> {
     const sessionSummaryDir = this.getSessionSummaryDir();
     const timestamp = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
     const archivePath = `${this.projectName}/${this.archiveBasePath}/${timestamp}`;

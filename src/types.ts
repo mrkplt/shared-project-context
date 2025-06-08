@@ -1,5 +1,4 @@
    import { FileSystemHelper } from "./models/context_types/utilities/fileSystem";
-   import { Dirent } from 'fs';
 
    //Used in Handlers
    export interface ContentItem {
@@ -15,7 +14,7 @@
     correctionGuidance?: string[];
    }
 
-   export interface PersistenceResponse {   
+   export interface ContexTypeResponse {   
     success: boolean;
     content?: string;
     validation?: ValidationResponse;
@@ -24,11 +23,11 @@
 
    // Context Type Interface
    export interface ContextType {
-    update(content: string): Promise<PersistenceResponse>;
-    read(): Promise<PersistenceResponse>;
-    reset(): Promise<PersistenceResponse>;
-    validate(content: string): ValidationResponse;
-    persistenceHelper: FileSystemHelper;
+      update(content: string): Promise<ContexTypeResponse>;
+      read(): Promise<ContexTypeResponse>;
+      reset(): Promise<ContexTypeResponse>;
+      validate(content: string): ValidationResponse;
+      persistenceHelper: FileSystemHelper;
    }
 
 //    {validationErrors: [{
@@ -44,18 +43,18 @@
 // retry_instructions: 'Call update_context("other", content, name) with a valid filename'
 // }
 
-
-export interface persistenceResponse {
+export interface PersistenceResponse {
    success: boolean;
+   data?: string[];
    errors?: string[];
 }
 
 export interface PersistenceHelper {
-   listProjects(): Promise<string[]>;
-   initProject(projectName: string): Promise<persistenceResponse>;
-   listAllContextForProject(projectName: string): Promise<string[]>;
-   listAllContextTypes(projectName: string): Promise<string[]>;
-   writeContext(projectName: string, contextType: string, contextName: string, content: string): Promise<persistenceResponse>
-   getContext(projectName: string, contextName: string): Promise<string>;
-   archiveContext(projectName: string, contextType: string, contextName: string): Promise<persistenceResponse>
- }
+   listProjects(): Promise<PersistenceResponse>;
+   initProject(projectName: string): Promise<PersistenceResponse>;
+   listAllContextForProject(projectName: string): Promise<PersistenceResponse>;
+   listAllContextTypes(projectName: string): Promise<PersistenceResponse>;
+   writeContext(projectName: string, contextType: string, contextName: string, content: string): Promise<PersistenceResponse>
+   getContext(projectName: string, contextName: string): Promise<PersistenceResponse>;
+   archiveContext(projectName: string, contextType: string, contextName: string): Promise<PersistenceResponse>
+}

@@ -1,4 +1,4 @@
-import { ValidationResponse, ContextType, PersistenceResponse } from '../../types.js';
+import { ValidationResponse, ContextType, ContexTypeResponse, PersistenceResponse } from '../../types.js';
 import { FileSystemHelper } from './utilities/fileSystem.js';
 
 export class MentalModelType implements ContextType {
@@ -6,16 +6,16 @@ export class MentalModelType implements ContextType {
   
   public readonly persistenceHelper: FileSystemHelper;
   private readonly projectName: string;
-  private readonly fileName: string;
+  private readonly contextName: string;
 
   constructor(
     persistenceHelper: FileSystemHelper,
     projectName: string,
-    fileName?: string
+    contextName?: string
   ) {
-    this.projectName = projectName;
     this.persistenceHelper = persistenceHelper;
-    this.fileName = MentalModelType.DEFAULT_FILE_NAME || fileName; // Disregard fileName if provided
+    this.projectName = projectName;
+    this.contextName = MentalModelType.DEFAULT_FILE_NAME || contextName; // Disregard contextName if provided
   }
 
   private validateName(name?: string): ValidationResponse {
@@ -32,21 +32,22 @@ export class MentalModelType implements ContextType {
     return { isValid: true };
   }
 
-  async update(content: string): Promise<PersistenceResponse> {    
-    const filePath = `${this.projectName}/${this.fileName}`;
-    
-    try {
-      await this.persistenceHelper.writeFile(filePath, content);
-      return { success: true };
-    } catch (error) {
-      return {
-        success: false,
-        errors: [`Failed to write file: ${error instanceof Error ? error.message : 'Unknown error'}`]
-      };
+  async update(content: string): Promise<ContexTypeResponse> {
+    const result = await this.persistenceHelper.writeContext(
+      this.projectName, 
+      this.contextName, 
+      this.contextName, 
+      content
+    );
+
+    if (!result.success) {
+      return { success: false, errors: result.errors };
     }
+    
+    return { success: true };
   }
 
-  async read(_name?: string): Promise<PersistenceResponse> {
+  async read(_name?: string): Promise<ContexTypeResponse> {
     const nameValidation = this.validateName(_name);
     if (!nameValidation.isValid) {
       return {
@@ -55,45 +56,32 @@ export class MentalModelType implements ContextType {
         errors: [nameValidation.validationErrors?.join(' - ') || 'Invalid name parameter']
       };
     }
-    
-    const filePath = `${this.projectName}/${this.fileName}`;
-    
-    try {
-      const content = await this.persistenceHelper.readFile(filePath);
-      return { success: true, content };
-    } catch (error) {
-      return {
-        success: false,
-        content: '',
-        errors: [`Failed to read file: ${error instanceof Error ? error.message : 'Unknown error'}`]
-      };
+
+    const result: PersistenceResponse = 
+      await this.persistenceHelper.getContext(this.projectName, this.contextName);
+
+    if (!result.success) {
+      return { success: false, errors: result.errors };
     }
+    
+    return { success: true, content: result.data?.join('\n') || '' };
   }
 
-  async reset(): Promise<PersistenceResponse> {    
-    const filePath = `${this.projectName}/${this.fileName}`;
+  async reset(): Promise<ContexTypeResponse> {
+    const result = await this.persistenceHelper.archiveContext(
+      this.projectName,
+      'mental_model',  // contextType
+      'mental_model'   // contextName
+    );
+
+    if (!result.success) {
+      return { 
+        success: false, 
+        errors: result.errors || ['Failed to reset mental model'] 
+      };
+    };
     
-    try {
-      // Archive the file first
-      const timestamp = new Date().toISOString().split('T')[0];
-      const archivePath = `${this.projectName}/archives/${timestamp}/${this.fileName}`;
-      
-      // Ensure archive directory exists
-      await this.persistenceHelper.ensureDirectoryExists(`${this.projectName}/archives/${timestamp}`);
-      
-      // Move file to archive
-      await this.persistenceHelper.archive(filePath, archivePath);
-      return { success: true };
-    } catch (error) {
-      if (error instanceof Error) {
-        // File doesn't exist, nothing to reset
-        return {
-          success: false,
-          errors: [`Failed to reset file: ${error.message}`]
-        };
-      }
-      return { success: false, errors: ['Unknown error during reset' ]};
-    }
+    return { success: true };
   }
 
   validate(content: string): ValidationResponse {
