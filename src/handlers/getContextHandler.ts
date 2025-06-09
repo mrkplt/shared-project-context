@@ -5,7 +5,7 @@ import { ContentItem } from '../types';
 interface GetContextArgs {
   projectName: string;
   contextType: string;
-  fileName?: string;
+  contextName?: string;
 }
 
 class GetContextHandler {
@@ -22,7 +22,7 @@ class GetContextHandler {
       projectName: args.projectName,
       persistenceHelper: this.fsHelper,
       contextType: args.contextType,
-      contextName: args.fileName || args.contextType
+      contextName: args.contextName || args.contextType
     });
 
     try {

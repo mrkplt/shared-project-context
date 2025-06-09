@@ -92,8 +92,9 @@ When working with this server, start by listing projects to discover what's avai
               project_name: { type: 'string' },
               context_type: { 
                 type: 'string', 
-                // enum: ['mental_model', 'session_summary', 'bugs', 'features'] 
-              }
+                enum: ['mental_model', 'session_summary', 'other', 'features'] 
+              },
+              context_name: { type: 'string' }
             },
             required: ['project_name', 'context_type']
           }
@@ -107,8 +108,9 @@ When working with this server, start by listing projects to discover what's avai
               project_name: { type: 'string' },
               context_type: { 
                 type: 'string', 
-                // enum: ['mental_model', 'session_summary', 'bugs', 'features'] 
+                enum: ['mental_model', 'session_summary', 'other', 'features'] 
               },
+              context_name: { type: 'string' },
               content: { type: 'string' }
             },
             required: ['project_name', 'context_type', 'content']
@@ -129,23 +131,21 @@ When working with this server, start by listing projects to discover what's avai
             case 'list_projects':
               return await this.listProjectsHandler.handle();
               
-            case 'get_context':
-              return await this.getContextHandler.handle(
-                args as { 
-                  projectName: string; 
-                  contextType: string;
-                  name?: string; 
+              case 'get_context':
+                return await this.getContextHandler.handle({
+                  projectName: args.project_name as string,     // Map snake_case to camelCase
+                  contextType: args.context_type as string,     // Map snake_case to camelCase
+                  contextName: args.context_name as string
                 });
               
             case 'update_context':
-              return await this.updateContextHandler.handle(
-                args as { 
-                  projectName: string;
-                  contextType: string;
-                  content: string;
-                  name?: string;
-                }
-              );
+              return await this.updateContextHandler.handle({ 
+                  projectName: args.project_name as string,
+                  contextType: args.context_type as string,
+                  contextName: args.context_name as string,
+                  content: args.content as string
+
+              });
 
             case 'create_project':
               return await this.createProjectHandler.handle(args.projectName as string);

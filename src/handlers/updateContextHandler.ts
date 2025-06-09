@@ -23,7 +23,8 @@ class UpdateContextHandler {
       projectName: args.projectName,
       persistenceHelper: this.fsHelper,
       contextType: args.contextType,
-      contextName: args.contextName || args.contextType
+      contextName: args.contextName || args.contextType,
+      content: args.content
     });
 
     const result = await contextType.update()

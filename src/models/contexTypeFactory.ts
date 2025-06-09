@@ -3,7 +3,7 @@ import { MentalModelType } from './context_types/mental_model_type';
 import { FeaturesType } from './context_types/features_type';
 import { OtherType } from './context_types/other_type';
 import { FileSystemHelper } from './context_types/utilities/fileSystem';
-import { ContextType, ContextTypeArgs } from '../types.js';
+import { ContextType } from '../types.js';
 
 interface ContextTypeFactoryArgs {
     projectName: string;
@@ -23,7 +23,11 @@ export const typeMap = {
 export default function contextTypeFactory(args: ContextTypeFactoryArgs): ContextType {
     const { persistenceHelper, projectName, contextType, contextName, content } = args;
     const TypeClass = typeMap[contextType as keyof typeof typeMap];
-        
+    
+    if (!TypeClass) {
+        throw new Error(`Unknown context type: ${contextType}`);
+    }
+
     return new TypeClass({
         persistenceHelper,
         projectName,

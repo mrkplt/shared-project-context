@@ -27,6 +27,7 @@ export class FileSystemHelper implements PersistenceHelper {
   }
 
   async listProjects(): Promise< PersistenceResponse > {
+    // BUG: This should return an array of project names - it currently only returns ["projects"] not the contents of the directory
     try {
       await this.ensureDirectoryExists( this.contextRoot );
       const entries = await this.readDirectory( this.contextRoot, { withFileTypes: true }) as Dirent[];
@@ -37,6 +38,7 @@ export class FileSystemHelper implements PersistenceHelper {
     }
   }
 
+  // BUG: This returning undefined. 
   async listAllContextForProject(projectName: string): Promise<PersistenceResponse> {
     const projectPath = await this.getProjectPath(projectName);
     try {
@@ -95,15 +97,11 @@ export class FileSystemHelper implements PersistenceHelper {
 
   async writeContext(projectName: string, contextType: string, contextName: string, content: string): Promise<PersistenceResponse> {
     try {
-      const projectPath = await this.getProjectPath(projectName);
-      const contextTypeDir = path.join(projectPath, contextType);
-      await this.ensureDirectoryExists(contextTypeDir);
-      
       const fileName = contextType === 'session_summary' 
         ? this.generateTimestampedContextName(contextName) 
         : contextName;
 
-      const filePath = path.join(contextTypeDir, fileName);
+      const filePath = await this.getContextFilePath(projectName, contextType, fileName);
       await fs.writeFile(filePath, content);
 
       return { success: true };
@@ -207,16 +205,16 @@ export class FileSystemHelper implements PersistenceHelper {
     return path.join(this.contextRoot, 'projects', projectName);
   }
 
-  private async getContextFilePath(projectName: string, contextType: string, name?: string): Promise<string> {
+  private async getContextFilePath(projectName: string, contextType: string, contextName?: string): Promise<string> {
     const projectPath = await this.getProjectPath(projectName)
     await this.ensureDirectoryExists(projectPath);
     await this.ensureDirectoryExists(path.join(projectPath, contextType));
 
     switch (contextType) {
       case 'session_summary':
-        return path.join(projectPath, contextType, `${name}.md`);
+        return path.join(projectPath, contextType, `${contextName}.md`);
       case 'other':
-        return path.join(projectPath, contextType, `${name}.md`);
+        return path.join(projectPath, contextType, `${contextName}.md`);
       case 'mental_model':
         return path.join(projectPath, contextType, `${contextType}.md`);
       case 'features':

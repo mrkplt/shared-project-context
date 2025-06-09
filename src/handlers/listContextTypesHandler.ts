@@ -15,7 +15,8 @@ class ListcontextTypesHandler {
   ) {
     this.fsHelper = fsHelper;
   }
-
+ // BUG: returns [["SessionSummaryType"],["MentalModelType"],["FeaturesType"],["OtherType"]]
+ // should return ["session_summary","mental_model","features","other", "other2", "other3"]
   async handle(args: ListcontextTypesArgs): Promise<{ content: ContentItem[] }> {
     try {
       const contextTypes = Object.values(typeMap).map(type => {
