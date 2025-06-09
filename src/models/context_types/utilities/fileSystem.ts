@@ -27,10 +27,9 @@ export class FileSystemHelper implements PersistenceHelper {
   }
 
   async listProjects(): Promise< PersistenceResponse > {
-    // BUG: This should return an array of project names - it currently only returns ["projects"] not the contents of the directory
     try {
       await this.ensureDirectoryExists( this.contextRoot );
-      const entries = await this.readDirectory( this.contextRoot, { withFileTypes: true }) as Dirent[];
+      const entries = await this.readDirectory( path.join(this.contextRoot, 'projects'), { withFileTypes: true }) as Dirent[];
       return { success: true, data: entries.filter(entry => entry.isDirectory()).map(entry => entry.name) };
     } catch (error) {
       const errorMessage = ( error instanceof Error ? error.message : 'Unknown error');
