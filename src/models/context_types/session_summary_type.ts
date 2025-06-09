@@ -11,7 +11,6 @@ export class SessionSummaryType implements ContextType {
     this.persistenceHelper = args.persistenceHelper;
     this.projectName = args.projectName;
     this.contextType = 'session_summary';
-
     this.content = args.content;
   }
 
