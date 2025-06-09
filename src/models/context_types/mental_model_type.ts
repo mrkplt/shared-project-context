@@ -40,7 +40,11 @@ export class MentalModelType implements ContextType {
 
   async read(): Promise<ContexTypeResponse> {
     const result: PersistenceResponse = 
-      await this.persistenceHelper.getContext(this.projectName, 'mental_model', this.contextName);
+      await this.persistenceHelper.getContext(
+        this.projectName, 
+        'mental_model', 
+        ['mental_model']
+      );
 
     if (!result.success) {
       return { success: false, errors: result.errors };
@@ -53,7 +57,7 @@ export class MentalModelType implements ContextType {
     const result = await this.persistenceHelper.archiveContext(
       this.projectName,
       'mental_model',  // contextType
-      'mental_model'   // contextName
+      ['mental_model']   // contextName
     );
 
     if (!result.success) {

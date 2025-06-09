@@ -1,19 +1,17 @@
 import { ValidationResponse, ContextType, ContexTypeResponse, ContextTypeArgs } from '../../types.js';
-
 import { FileSystemHelper } from './utilities/fileSystem.js';
 
 export class SessionSummaryType implements ContextType {
-  private static readonly DEFAULT_FILE_NAME = 'session_summary'
-  private readonly archiveBasePath = 'archives/session_summary';
   public readonly persistenceHelper: FileSystemHelper;
   private readonly projectName: string;
-  private readonly contextName: string;
+  private readonly contextType: string;
   private content: string | undefined;
 
   constructor(args: ContextTypeArgs) {
     this.persistenceHelper = args.persistenceHelper;
     this.projectName = args.projectName;
-    this.contextName = SessionSummaryType.DEFAULT_FILE_NAME || args.contextName;  // Disregard fileName if provided
+    this.contextType = 'session_summary';
+
     this.content = args.content;
   }
 
@@ -41,110 +39,43 @@ export class SessionSummaryType implements ContextType {
 
     return { success: true };
   }
-  
+
   async read(): Promise<ContexTypeResponse> {
-    try {
-      // List all context files for the project
-      const result = await this.persistenceHelper.listAllContextForProject(this.projectName);
-      
-      if (!result.success) {
-        return {
-          success: false,
-          errors: result.errors
-        };
-      }
-      
-      if (!result.data) {
-        return {
-          success: false,
-          errors: ['No session summary files found']
-        };
-      }
-      
-      const sessionSummaryFiles = (result.data || [])
-        .filter((fileName: string) => {
-          // Handle both formats: 'session_summary/...' and '...' (root level files)
-          const baseName = fileName.includes('/') 
-            ? fileName.split('/').pop() || '' 
-            : fileName;
-          // Only include files that match the session summary pattern (date-based)
-          return /^\d{4}-\d{2}-\d{2}(-\d{2}-\d{2}-\d{2}(-\d+)?)?$/.test(baseName.split('.')[0]);
-        })
-        .sort((a: string, b: string) => {
-          // Sort by the full path to ensure consistent ordering
-          return b.localeCompare(a);
-        });
-      
-      // Read and concatenate all files
-      let combinedContent = '';
-      for (const fileName of sessionSummaryFiles) {
-        try {
-          const fileResult = await this.persistenceHelper.getContext(
-            this.projectName,
-            'session_summary',
-            fileName.replace(/\.md$/, '') // Remove .md extension for context name
-          );
-          
-          if (fileResult.success && fileResult.data?.length > 0) {
-            if (combinedContent) {
-              combinedContent += '\n\n---\n\n'; // Add separator between entries
-            }
-            combinedContent += `# ${fileName.replace(/\.md$/, '')}\n\n${fileResult.data[0]}`;
-          }
-        } catch (error) {
-          console.error(`Error reading file ${fileName}:`, error);
-          // Continue with next file even if one fails
-        }
-      }
-      
-      return { success: true, content: combinedContent };
-    } catch (error) {
+    const allContextsResult = await this.getAllContexts();
+
+    const contextResult = await this.persistenceHelper.getContext(
+      this.projectName,
+      'session_summary',
+      allContextsResult
+    );
+
+    if (!contextResult.success) {
       return {
         success: false,
-        errors: [`Failed to read session summaries: ${error instanceof Error ? error.message : 'Unknown error'}`]
+        errors: contextResult.errors
       };
     }
+
+    return { success: true, content: contextResult.data?.join('\n\n---\n\n') };
   }
 
   async reset(_name?: string): Promise<ContexTypeResponse> {
-    const sessionSummaryDir = this.getSessionSummaryDir();
-    const timestamp = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-    const archivePath = `${this.projectName}/${this.archiveBasePath}/${timestamp}`;
-    
-    try {
-      // Check if there are any files to archive
-      try {
-        const files = await this.persistenceHelper.listDirectory(sessionSummaryDir);
-        if (files.length === 0) {
-          return { success: true }; // Nothing to archive
-        }
-      } catch (error) {
-        // Directory doesn't exist, nothing to archive
-        return { success: true };
-      }
-      
-      // Create archive directory
-      await this.persistenceHelper.ensureDirectoryExists(archivePath);
-      
-      // List all files in the directory
-      const files = await this.persistenceHelper.listDirectory(sessionSummaryDir);
-      
-      // Move each file to the archive
-      for (const file of files) {
-        if (!file.isDirectory) {
-          const sourcePath = `${sessionSummaryDir}/${file.name}`;
-          const targetPath = `${archivePath}/${file.name}`;
-          await this.persistenceHelper.moveFile(sourcePath, targetPath);
-        }
-      }
-      
-      return { success: true };
-    } catch (error) {
+    const allContextsResult = await this.getAllContexts();
+
+    const result = await this.persistenceHelper.archiveContext(
+      this.projectName,
+      'session_summary',
+      allContextsResult
+    );
+
+    if (!result.success) {
       return {
         success: false,
-        errors: [`Failed to reset session summaries: ${error instanceof Error ? error.message : 'Unknown error'}`]
+        errors: result.errors
       };
     }
+
+    return { success: true };
   }
 
   validate(): ValidationResponse {
@@ -174,6 +105,18 @@ export class SessionSummaryType implements ContextType {
     const now = new Date();
     const isoString = now.toISOString();
     // Remove timezone and colons from time
-    return `${this.contextName}-${isoString.replace(/\.\d+Z$/, '').replace(/[:.]/g, '-')}`;
+    return `${this.contextType}-${isoString.replace(/\.\d+Z$/, '').replace(/[:.]/g, '-')}`;
+  }
+
+  private async getAllContexts(): Promise<string[]> {
+    const allContextsResult = await this.persistenceHelper.listAllContextForProject(this.projectName);
+    
+    if (!allContextsResult.success || !allContextsResult.data) {
+      throw new Error(`Failed to list all contexts: ${allContextsResult.errors?.join(', ')}`);
+    }
+
+    return allContextsResult.data
+      .filter((contextName) => contextName.startsWith('session_summary'))
+      .sort((a: string, b: string) => { return b.localeCompare(a) });
   }
 }

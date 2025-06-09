@@ -60,7 +60,12 @@ export class OtherType implements ContextType {
       };
     }
 
-    const result = await this.persistenceHelper.getContext(this.projectName, 'other', this.contextName);
+    const result = await this.persistenceHelper.getContext(
+      this.projectName, 
+      'other', 
+      [this.contextName]
+    );
+    
     if (!result.success) {
       return {
         success: false,
@@ -74,14 +79,18 @@ export class OtherType implements ContextType {
   }
 
   async reset(): Promise<ContexTypeResponse> {
-    if (this.contextName) {
+    if (!this.contextName) {
       return {
         success: false,
         errors: ['Name parameter is required for other type']
       };
     }
   
-    const result = await this.persistenceHelper.archiveContext(this.projectName, 'other', this.contextName);
+    const result = await this.persistenceHelper.archiveContext(
+      this.projectName, 
+      'other', 
+      [this.contextName]
+    );
     if (!result.success) {
       return {
         success: false,

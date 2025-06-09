@@ -26,8 +26,15 @@ export class FileSystemHelper implements PersistenceHelper {
     }
   }
 
-  private async onlyContextNamesFromDirectory(entries: Dirent[]): Promise<string[]> {
-    return entries.filter(entry => entry.isFile()).map(entry => entry.name.split('.')[0]).filter(name => name !== '')
+  async listProjects(): Promise< PersistenceResponse > {
+    try {
+      await this.ensureDirectoryExists( this.contextRoot );
+      const entries = await this.readDirectory( this.contextRoot, { withFileTypes: true }) as Dirent[];
+      return { success: true, data: entries.filter(entry => entry.isDirectory()).map(entry => entry.name) };
+    } catch (error) {
+      const errorMessage = ( error instanceof Error ? error.message : 'Unknown error');
+      return { success: false, errors: [errorMessage] };
+    }
   }
 
   async listAllContextForProject(projectName: string): Promise<PersistenceResponse> {
@@ -41,31 +48,10 @@ export class FileSystemHelper implements PersistenceHelper {
     }
   }
 
-  async listProjects(): Promise< PersistenceResponse > {
+  async getContext(projectName: string, contextType: string, contextName: string[]): Promise<PersistenceResponse> {
+    //TODO: handle multiple context names
     try {
-      await this.ensureDirectoryExists( this.contextRoot );
-      const entries = await this.readDirectory( this.contextRoot, { withFileTypes: true }) as Dirent[];
-      return { success: true, data: entries.filter(entry => entry.isDirectory()).map(entry => entry.name) };
-    } catch (error) {
-      const errorMessage = ( error instanceof Error ? error.message : 'Unknown error');
-      return { success: false, errors: [errorMessage] };
-    }
-  }
-
-  async listAllContextTypes(projectName: string): Promise<PersistenceResponse> {
-    const dirPath = await this.getProjectPath(projectName);
-    try {
-      const entries = await this.readDirectory(dirPath, { withFileTypes: true }) as Dirent[];
-      return {success: true, data: await this.onlyContextNamesFromDirectory(entries)}
-    } catch (error) {
-      const errorMessage = ( error instanceof Error ? error.message : 'Unknown error');
-      return { success: false, errors: [errorMessage] };
-    }
-  }
-  
-  async getContext(projectName: string, contextType: string, contextName: string): Promise<PersistenceResponse> {
-    try {
-      const filePath = await this.getContextFilePath(projectName, contextName);
+      const filePath = await this.getContextFilePath(projectName, contextType, contextName[0]);
       return { success: true, data: [await fs.readFile(filePath, 'utf-8')]}
     } catch (error) {
       const errorMessage = ( error instanceof Error ? error.message : 'Unknown error');
@@ -89,8 +75,10 @@ export class FileSystemHelper implements PersistenceHelper {
     }
   }
 
-  // This needs to be built
-  async archiveContext(projectName: string, contextType: string, contextName?: string): Promise<PersistenceResponse> {
+
+  async archiveContext(projectName: string, contextType: string, contextName: string[]): Promise<PersistenceResponse> {
+      // TODO:This needs to be built
+    //TODO: handle multiple context names
     return {success: false};
   }
 
@@ -140,5 +128,14 @@ export class FileSystemHelper implements PersistenceHelper {
       default:
         throw new Error('Invalid file type');
     }
-  };
+  }
+
+  private async onlyContextNamesFromDirectory(entries: Dirent[]): Promise<string[]> {
+    return entries
+      .filter(entry => entry.isFile())
+      .map(entry => entry.name.split('.')[0])
+      .map(name => name.split('/')[-1])
+      .filter(name => name !== '')
+      
+  }
 }

@@ -37,7 +37,7 @@ export class FeaturesType implements ContextType {
 
   async read(): Promise<ContexTypeResponse> {
     const result: PersistenceResponse = 
-      await this.persistenceHelper.getContext(this.projectName, 'features', this.contextName);
+      await this.persistenceHelper.getContext(this.projectName, 'features', ['features']);
 
     if (!result.success) {
       return { success: false, errors: result.errors };
@@ -50,7 +50,7 @@ export class FeaturesType implements ContextType {
     const result = await this.persistenceHelper.archiveContext(
         this.projectName,
         'features',  // contextType
-        'features'
+        ['features']
     );
 
     if (!result.success) {

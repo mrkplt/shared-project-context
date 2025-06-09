@@ -21,9 +21,11 @@ class ListcontextTypesHandler {
       const contextTypes = Object.values(typeMap).map(type => {
         if (type.name !== 'other') return [type.name]
         return new OtherType(
-          this.fsHelper,
-          args.projectName,
-          "undefined"
+          {
+            persistenceHelper: this.fsHelper,
+            projectName: args.projectName,
+            contextName: "undefined"
+          }
         ).listAllContext();
       });
 
