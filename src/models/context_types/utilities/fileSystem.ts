@@ -48,22 +48,60 @@ export class FileSystemHelper implements PersistenceHelper {
     }
   }
 
-  async getContext(projectName: string, contextType: string, contextName: string[]): Promise<PersistenceResponse> {
-    //TODO: handle multiple context names
+  async getContext(projectName: string, contextType: string, contextNames: string[]): Promise<PersistenceResponse> {
     try {
-      const filePath = await this.getContextFilePath(projectName, contextType, contextName[0]);
-      return { success: true, data: [await fs.readFile(filePath, 'utf-8')]}
+      const filePathPromises = contextNames.map(name => 
+        this.getContextFilePath(projectName, contextType, name)
+      );
+      const filePaths = await Promise.all(filePathPromises);
+      
+      // Read all files concurrently
+      const fileReadPromises = filePaths.map(async (filePath, index) => {
+        try {
+          const content = await fs.readFile(filePath, 'utf-8');
+          return { content, error: null, name: contextNames[index] };
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          return { content: null, error: errorMessage, name: contextNames[index] };
+        }
+      });
+      
+      const results = await Promise.all(fileReadPromises);
+      
+      // Check if any reads failed
+      const errors = results
+        .filter(result => result.error !== null)
+        .map(result => `${result.name}: ${result.error}`);
+      
+      // If any errors, return failure
+      if (errors.length > 0) {
+        return { success: false, errors };
+      }
+      
+      // Sort results by name and extract content
+      const sortedResults = results
+        .filter(result => result.content !== null)
+        .sort((a, b) => a.name.localeCompare(b.name));
+      
+      const data = sortedResults.map(result => result.content!);
+      
+      return { success: true, data };
+      
     } catch (error) {
-      const errorMessage = ( error instanceof Error ? error.message : 'Unknown error');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return { success: false, errors: [errorMessage] };
     }
   }
 
-  async writeContext(projectName: string, contextType: string, fileName: string, content: string): Promise<PersistenceResponse> {
+  async writeContext(projectName: string, contextType: string, contextName: string, content: string): Promise<PersistenceResponse> {
     try {
       const projectPath = await this.getProjectPath(projectName);
       const contextTypeDir = path.join(projectPath, contextType);
       await this.ensureDirectoryExists(contextTypeDir);
+      
+      const fileName = contextType === 'session_summary' 
+        ? this.generateTimestampedContextName(contextName) 
+        : contextName;
 
       const filePath = path.join(contextTypeDir, fileName);
       await fs.writeFile(filePath, content);
@@ -76,10 +114,58 @@ export class FileSystemHelper implements PersistenceHelper {
   }
 
 
-  async archiveContext(projectName: string, contextType: string, contextName: string[]): Promise<PersistenceResponse> {
-      // TODO:This needs to be built
-    //TODO: handle multiple context names
-    return {success: false};
+  async archiveContext(projectName: string, contextType: string, contextNames: string[]): Promise<PersistenceResponse> {
+    try {
+      const projectPath = await this.getProjectPath(projectName);
+      const timestamp = this.timestamp();
+      const archiveDir = path.join(projectPath, 'archive', contextType, timestamp);
+      
+      // Ensure the archive directory exists
+      await this.ensureDirectoryExists(archiveDir);
+      
+      // Process each context name
+      const movePromises = contextNames.map(async (contextName) => {
+        try {
+          // Get the source file path
+          const sourceFilePath = await this.getContextFilePath(projectName, contextType, contextName);
+          
+          // Check if source file exists
+          await fs.access(sourceFilePath);
+          
+          // Get the filename from the source path
+          const fileName = path.basename(sourceFilePath);
+          
+          // Create destination path in archive directory
+          const destinationPath = path.join(archiveDir, fileName);
+          
+          // Move the file to archive
+          await fs.rename(sourceFilePath, destinationPath);
+          
+          return { success: true, name: contextName };
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          return { success: false, name: contextName, error: errorMessage };
+        }
+      });
+      
+      const results = await Promise.all(movePromises);
+      
+      // Check if any moves failed
+      const errors = results
+        .filter(result => !result.success)
+        .map(result => `${result.name}: ${result.error}`);
+      
+      // If any errors, return failure
+      if (errors.length > 0) {
+        return { success: false, errors };
+      }
+      
+      return { success: true };
+      
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return { success: false, errors: [errorMessage] };
+    }
   }
 
   private async readDirectory(dirPath: string, options: { withFileTypes: boolean, recursive?: boolean } = { withFileTypes: true }): Promise<string[] | Dirent[]> {
@@ -107,6 +193,15 @@ export class FileSystemHelper implements PersistenceHelper {
       }
     }
   }
+  private timestamp(): string {
+    const now = new Date();
+    const isoString = now.toISOString();
+    return `${isoString.replace(/\.\d+Z$/, '').replace(/[:.]/g, '-')}`;
+  }
+
+  private generateTimestampedContextName(contextType: string): string {
+    return `${contextType}-${this.timestamp()}`;
+  }
 
   private async getProjectPath(projectName: string): Promise<string> {
     return path.join(this.contextRoot, 'projects', projectName);
@@ -115,6 +210,7 @@ export class FileSystemHelper implements PersistenceHelper {
   private async getContextFilePath(projectName: string, contextType: string, name?: string): Promise<string> {
     const projectPath = await this.getProjectPath(projectName)
     await this.ensureDirectoryExists(projectPath);
+    await this.ensureDirectoryExists(path.join(projectPath, contextType));
 
     switch (contextType) {
       case 'session_summary':
@@ -122,9 +218,9 @@ export class FileSystemHelper implements PersistenceHelper {
       case 'other':
         return path.join(projectPath, contextType, `${name}.md`);
       case 'mental_model':
-        return path.join(projectPath, `${contextType}.md`);
+        return path.join(projectPath, contextType, `${contextType}.md`);
       case 'features':
-        return path.join(projectPath, `${contextType}.md`);
+        return path.join(projectPath, contextType, `${contextType}.md`);
       default:
         throw new Error('Invalid file type');
     }

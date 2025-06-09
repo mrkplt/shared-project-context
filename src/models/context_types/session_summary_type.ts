@@ -25,7 +25,7 @@ export class SessionSummaryType implements ContextType {
     const result = await this.persistenceHelper.writeContext(
       this.projectName, 
       'session_summary', 
-      this.generateTimestampedContextName(), 
+      'session_summary',
       this.content
     );
      
@@ -58,7 +58,7 @@ export class SessionSummaryType implements ContextType {
     return { success: true, content: contextResult.data?.join('\n\n---\n\n') };
   }
 
-  async reset(_name?: string): Promise<ContexTypeResponse> {
+  async reset(): Promise<ContexTypeResponse> {
     const allContextsResult = await this.getAllContexts();
 
     const result = await this.persistenceHelper.archiveContext(
@@ -97,14 +97,6 @@ export class SessionSummaryType implements ContextType {
     }
     
     return { isValid: true };
-  }
-
-  private generateTimestampedContextName(): string {
-    // ISO string with millisecond precision, no timezone
-    const now = new Date();
-    const isoString = now.toISOString();
-    // Remove timezone and colons from time
-    return `${this.contextType}-${isoString.replace(/\.\d+Z$/, '').replace(/[:.]/g, '-')}`;
   }
 
   private async getAllContexts(): Promise<string[]> {

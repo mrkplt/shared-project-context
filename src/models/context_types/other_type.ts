@@ -9,11 +9,6 @@ export class OtherType implements ContextType {
   private readonly contextName: string | undefined;
   private readonly content: string | undefined;
 
-  /**
-   * Creates a new OtherType instance for handling arbitrary file types
-   * @param projectName - Name of the project this context belongs to
-   * @param persistenceHelper - Helper for file system operations
-   */
   constructor(args: ContextTypeArgs) {
     this.persistenceHelper = args.persistenceHelper;
     this.projectName = args.projectName;
