@@ -101,7 +101,7 @@ When working with this server, start by listing projects to discover what's avai
         },
         {
           name: 'update_context',
-          description: 'Update ',
+          description: 'Update context for a project with content that will be stored for future AI assistant sessions. The update behavior depends on context type: session_summary appends with timestamps, mental_model and features replace content, other type requires a context_name parameter for named files. Use after get_context to read current state before updating.',
           inputSchema: {
             type: 'object',
             properties: {
