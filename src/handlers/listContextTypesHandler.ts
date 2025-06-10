@@ -15,32 +15,36 @@ class ListcontextTypesHandler {
   ) {
     this.fsHelper = fsHelper;
   }
- // BUG: returns [["SessionSummaryType"],["MentalModelType"],["FeaturesType"],["OtherType"]]
- // should return ["session_summary","mental_model","features","other", "other2", "other3"]
-  async handle(args: ListcontextTypesArgs): Promise<{ content: ContentItem[] }> {
-    try {
-      const contextTypes = Object.values(typeMap).map(type => {
-        if (type.name !== 'other') return [type.name]
-        return new OtherType(
-          {
-            persistenceHelper: this.fsHelper,
-            projectName: args.projectName,
-            contextName: "undefined"
-          }
-        ).listAllContext();
-      });
 
-      return {
-        content: [{
-          type: 'text',
-          text: JSON.stringify(contextTypes)
-        }]
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      throw new Error(`Failed to list context types: ${errorMessage}`);
+async handle(args: ListcontextTypesArgs): Promise<{ content: ContentItem[] }> {
+  try {
+    // Get all standard context types (excluding 'other')
+    const standardTypes = Object.keys(typeMap).filter(key => key !== 'other');
+    
+    // Handle 'other' type if it exists
+    let otherContexts: string[] = [];
+    if (typeMap.other) {
+      const otherType = new OtherType({
+        persistenceHelper: this.fsHelper,
+        projectName: args.projectName,
+        contextName: 'undefined' // Empty string or appropriate default
+      });
+      
+      const result = await otherType.listAllContext();
+      otherContexts = result.success && result.data ? result.data : [];
     }
-  };
+
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify([...standardTypes, ...otherContexts])
+      }]
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    throw new Error(`Failed to list context types: ${errorMessage}`);
+  }
+}
 }
 
 export default ListcontextTypesHandler;

@@ -37,7 +37,6 @@ export class FileSystemHelper implements PersistenceHelper {
     }
   }
 
-  // BUG: This returning undefined. 
   async listAllContextForProject(projectName: string): Promise<PersistenceResponse> {
     const projectPath = await this.getProjectPath(projectName);
     try {
@@ -226,9 +225,7 @@ export class FileSystemHelper implements PersistenceHelper {
   private async onlyContextNamesFromDirectory(entries: Dirent[]): Promise<string[]> {
     return entries
       .filter(entry => entry.isFile())
-      .map(entry => entry.name.split('.')[0])
-      .map(name => name.split('/')[-1])
-      .filter(name => name !== '')
-      
+      .map(entry => entry.name.split('.')[0].split('/').pop())
+      .filter((name): name is string => name !== undefined && name !== '');
   }
 }

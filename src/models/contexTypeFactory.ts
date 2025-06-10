@@ -6,10 +6,10 @@ import { FileSystemHelper } from './context_types/utilities/fileSystem';
 import { ContextType } from '../types.js';
 
 interface ContextTypeFactoryArgs {
-    projectName: string;
     persistenceHelper: FileSystemHelper;
+    projectName: string;
     contextType: string;
-    contextName: string;
+    contextName?: string;
     content?: string;
 }
 

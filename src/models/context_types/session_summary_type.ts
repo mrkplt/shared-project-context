@@ -105,7 +105,7 @@ export class SessionSummaryType implements ContextType {
     if (!allContextsResult.success || !allContextsResult.data) {
       throw new Error(`Failed to list all contexts: ${allContextsResult.errors?.join(', ')}`);
     }
-    console.log(allContextsResult.data);
+
     return allContextsResult.data
       .filter((contextName) => contextName && contextName.startsWith('session_summary'))
       .sort((a: string, b: string) => { return b.localeCompare(a) });

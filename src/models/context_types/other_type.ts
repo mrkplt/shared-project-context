@@ -2,8 +2,6 @@ import { ValidationResponse, ContextType, ContexTypeResponse, PersistenceRespons
 import { FileSystemHelper } from './utilities/fileSystem.js';
 
 export class OtherType implements ContextType {
-  private static readonly FILE_PREFIX = 'other_';
-  
   public readonly persistenceHelper: FileSystemHelper;
   private readonly projectName: string;
   private readonly contextName: string | undefined;
@@ -16,6 +14,9 @@ export class OtherType implements ContextType {
     this.content = args.content;
   }
 
+
+  // BUG: SOmewhere in the call stack we are assigning contextType to 
+  // ContextName and not failing if ContextName is not present
   async update(): Promise<ContexTypeResponse> {
     if (!this.contextName) {
       return {
@@ -32,7 +33,7 @@ export class OtherType implements ContextType {
     const result = await this.persistenceHelper.writeContext(
       this.projectName, 
       'other', 
-      this.contextName, 
+      this.contextName,
       this.content
     );
     
@@ -132,7 +133,7 @@ export class OtherType implements ContextType {
 
   async listAllContext(): Promise<PersistenceResponse> {
     const result = await this.persistenceHelper.listAllContextForProject(this.projectName);
-    if (!result.success) {
+    if (!result.success || !result.data) {
       return {
         success: false,
         errors: result.errors
@@ -140,7 +141,11 @@ export class OtherType implements ContextType {
     }
     return {
       success: true,
-      data: result.data
+      data: result.data.filter(name => 
+        !(name.startsWith('session_summary') 
+        || name === 'mental_model' 
+        || name === 'features')
+      )
     };
   }
 }

@@ -126,7 +126,9 @@ When working with this server, start by listing projects to discover what's avai
         try {
           switch (name) {
             case 'list_context_types':
-              return await this.listcontextTypesHandler.handle(args as { projectName: string });
+              return await this.listcontextTypesHandler.handle({
+                projectName: args.project_name as string
+              });
 
             case 'list_projects':
               return await this.listProjectsHandler.handle();
