@@ -125,9 +125,10 @@ export class FileSystemHelper implements PersistenceHelper {
           // Get the source file path
           const sourceFilePath = await this.getContextFilePath(projectName, contextType, contextName);
           
-          // Check if source file exists
-          await fs.access(sourceFilePath);
-          
+          if (!(await this.fileExists(sourceFilePath))) {
+            return { success: true, name: contextName };
+          }
+
           // Get the filename from the source path
           const fileName = path.basename(sourceFilePath);
           
@@ -137,7 +138,7 @@ export class FileSystemHelper implements PersistenceHelper {
           // Move the file to archive
           await fs.rename(sourceFilePath, destinationPath);
           
-          return { success: true, name: contextName };
+          return { success: true };
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
           return { success: false, name: contextName, error: errorMessage };
@@ -189,6 +190,7 @@ export class FileSystemHelper implements PersistenceHelper {
       }
     }
   }
+
   private timestamp(): string {
     const now = new Date();
     const isoString = now.toISOString();
@@ -219,6 +221,18 @@ export class FileSystemHelper implements PersistenceHelper {
         return path.join(projectPath, contextType, `${contextType}.md`);
       default:
         throw new Error('Invalid file type');
+    }
+  }
+
+  private async fileExists(filePath: string): Promise<boolean> {
+    try {
+      await fs.access(filePath);
+      return true;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        return false;
+      }
+      throw error;
     }
   }
 
