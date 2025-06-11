@@ -24,6 +24,14 @@ export class MentalModelType implements ContextType {
       };
     }
 
+    const archiveResult = await this.reset();
+    if (!archiveResult.success) {
+      return {
+        success: false,
+        errors: archiveResult.errors
+      };
+    }
+
     const result = await this.persistenceHelper.writeContext(
       this.projectName, 
       'mental_model', 

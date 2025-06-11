@@ -14,9 +14,6 @@ export class OtherType implements ContextType {
     this.content = args.content;
   }
 
-
-  // BUG: SOmewhere in the call stack we are assigning contextType to 
-  // ContextName and not failing if ContextName is not present
   async update(): Promise<ContexTypeResponse> {
     if (!this.contextName) {
       return {
@@ -30,6 +27,15 @@ export class OtherType implements ContextType {
         errors: ['Content is required to update other type']
       };
     }
+
+    const archiveResult = await this.reset();
+    if (!archiveResult.success) {
+      return {
+        success: false,
+        errors: archiveResult.errors
+      };
+    }
+
     const result = await this.persistenceHelper.writeContext(
       this.projectName, 
       'other', 
