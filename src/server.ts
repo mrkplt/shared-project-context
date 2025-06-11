@@ -11,6 +11,7 @@ import GetContextHandler from './handlers/getContextHandler';
 import UpdateContextHandler from './handlers/updateContextHandler';
 import CreateProjectHandler from './handlers/createProjectHandler';
 import { FileSystemHelper } from './models/context_types/utilities/fileSystem';
+import ResetContextHandler from './handlers/resetContextHandler';
 
 // Main server class that implements the MCP protocol
 class ContextManagerServer {
@@ -21,6 +22,7 @@ class ContextManagerServer {
   private getContextHandler!: GetContextHandler;
   private updateContextHandler!: UpdateContextHandler;
   private createProjectHandler!: CreateProjectHandler;
+  private resetContextHandler!: ResetContextHandler;
 
   constructor() {
     // Initialize filesystem helper
@@ -31,6 +33,7 @@ class ContextManagerServer {
     this.createProjectHandler = new CreateProjectHandler(this.fsHelper);
     this.getContextHandler = new GetContextHandler(this.fsHelper);
     this.updateContextHandler = new UpdateContextHandler(this.fsHelper);
+    this.resetContextHandler = new ResetContextHandler(this.fsHelper);
     
     // Initialize MCP server with proper configuration
     this.server = new Server(
@@ -115,6 +118,22 @@ When working with this server, start by listing projects to discover what's avai
             },
             required: ['project_name', 'context_type', 'content']
           }
+        },
+        {
+          name: 'reset_context',
+          description: 'Reset context for a project with content that will be stored for future AI assistant sessions. The update behavior depends on context type: session_summary appends with timestamps, mental_model and features replace content, other type requires a context_name parameter for named files. Use after get_context to read current state before updating.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              project_name: { type: 'string' },
+              context_type: { 
+                type: 'string', 
+                enum: ['mental_model', 'session_summary', 'other', 'features'] 
+              },
+              context_name: { type: 'string' }
+            },
+            required: ['project_name', 'context_type', 'context_name']
+          }
         }
       ]
     }));
@@ -151,6 +170,13 @@ When working with this server, start by listing projects to discover what's avai
 
             case 'create_project':
               return await this.createProjectHandler.handle(args.projectName as string);
+
+            case 'reset_context':
+              return await this.resetContextHandler.handle({
+                projectName: args.project_name as string,
+                contextType: args.context_type as string,
+                contextName: args.context_name as string
+              });              
               
             default:
               throw new Error(`Unknown tool: ${name}`);
