@@ -40,13 +40,18 @@ class ContextManagerServer {
       {
         name: 'shared-project-context',
         version: '1.0.0',
-        description: `This server stores context exclusively for AI assistants.
+        description: `This server stores shared context exclusively for AI assistants.
 
-Context files go into projects, and each project has its own context files.
-Context files are named with one or more words separated by hyphens. For example, "mental-model" or "session-summary".
-Context files are used for storing important information between sessions and for you or other AI assistants to quickly come up to date on previous discussions.
-Context files are never for humans so you can write to them in the most efficient ways possible.
-Context files should be kept concise and focused to conserve agent context.
+This server manages four context types, each with distinct behaviors:
+- session_summary: Chronological log of the development session activity. Avoid code samples! Always appends new context.
+- mental_model: Technical architecture understanding
+- features: A list of features, their implementation status and other relevant information
+- other: Arbitrary named contexts
+
+Contexts go into projects, and each project has its own context files.
+Contexts are named with one or more words separated by hyphens. For example, "mental-model" or "session-summary".
+Contexts are used for storing important information between sessions and for you or other AI assistants to quickly come up to date on previous discussions.
+Contexts should be kept concise and focused.
 
 You should refresh your context if some time has passed since you last used this server.
 When working with this server, start by listing projects to discover what's available, then list file types for your chosen project to see what context already exists before reading or updating files.`,
@@ -77,7 +82,7 @@ When working with this server, start by listing projects to discover what's avai
         },
         {
           name: 'list_context_types',
-          description: 'Discover what context files exist for a specific project. Use this after selecting a project to see what information is already stored (mental_model, session_summary, features, bugs, etc.) before reading or updating context. This shows you what context types are available so you can retrieve relevant information.',
+          description: 'Discover what context files exist for a specific project. Use this after selecting a project to see what information is already stored (mental_model, session_summary, features, etc.) before reading or updating context. This shows you what context types are available so you can retrieve relevant information.',
           inputSchema: {
             type: 'object',
             properties: {
@@ -88,7 +93,7 @@ When working with this server, start by listing projects to discover what's avai
         },
         {
           name: 'create_project',
-          description: 'Create a new project to store context in. Project names are one or more words separated by hyphens. For example, "my-project" or "my-project-2".',
+          description: 'Create a project to store context in. Project names are one or more words separated by hyphens. For example, "my-project" or "my-project-2".',
           inputSchema: {
             type: 'object',
             properties: {
@@ -99,7 +104,7 @@ When working with this server, start by listing projects to discover what's avai
         },
         {
           name: 'get_context',
-          description: 'Retrieve existing context from a specific file type within a project. Use this to read information that you or another AI assistant previously stored. Always use list_context_types first to see what context files are available for the project.',
+          description: 'Retrieve existing context from within a project. Use this to read information that you or another AI assistant previously stored. If using the "other" context_type a context_name must be provided.  Always use list_context_types first to see what context files are available for the project.',
           inputSchema: {
             type: 'object',
             properties: {
@@ -115,7 +120,7 @@ When working with this server, start by listing projects to discover what's avai
         },
         {
           name: 'update_context',
-          description: 'Update context for a project with content that will be stored for future AI assistant sessions. The update behavior depends on context type: session_summary appends with timestamps, mental_model and features replace content, other type requires a context_name parameter for named files. Use after get_context to read current state before updating.',
+          description: 'Update context for a project with information that will be stored for future AI assistant sessions. The update behavior depends on context type: session_summary always appends new context, mental_model and features will replace all existing context of that type, the "other" type requires a "context_name" parameter and will alwyas overwrite if a context with that name already exists. Always use get_context before to make sure you have all the context before updating.',
           inputSchema: {
             type: 'object',
             properties: {
@@ -132,7 +137,7 @@ When working with this server, start by listing projects to discover what's avai
         },
         {
           name: 'reset_context',
-          description: 'Reset context for a project with content that will be stored for future AI assistant sessions. The update behavior depends on context type: session_summary appends with timestamps, mental_model and features replace content, other type requires a context_name parameter for named files. Use after get_context to read current state before updating.',
+          description: 'Caution! Reset a context_type in a project for a fresh start. Context_name is required for the "other" context_type. Always use list_context_types first to see what context files are available for the project.',
           inputSchema: {
             type: 'object',
             properties: {
@@ -143,7 +148,7 @@ When working with this server, start by listing projects to discover what's avai
               },
               context_name: { type: 'string' }
             },
-            required: ['project_name', 'context_type', 'context_name']
+            required: ['project_name', 'context_type']
           }
         }
       ]
