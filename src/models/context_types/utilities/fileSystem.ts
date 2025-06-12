@@ -77,8 +77,18 @@ export class FileSystemHelper implements PersistenceHelper {
           const content = await fs.readFile(filePath, 'utf-8');
           return { content, error: null, name: contextNames[index] };
         } catch (error) {
-          if (error instanceof Error && (error as NodeJS.ErrnoException).code === 'ENOENT') {
+          if (
+            error instanceof Error 
+            && (error as NodeJS.ErrnoException).code === 'ENOENT' 
+            && ['session_summary', 'features', 'mental_model'].includes(contextType)
+          ) {
             return { content: '', error: null, name: contextNames[index] };
+          } else if (
+            error instanceof Error 
+            && (error as NodeJS.ErrnoException).code === 'ENOENT' 
+            && ['other'].includes(contextType) 
+          ) {
+            return { content: null, error: 'Context not found. Have you created it using create_context yet?', name: contextNames[index] };
           }
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
           return { content: null, error: errorMessage, name: contextNames[index] };
