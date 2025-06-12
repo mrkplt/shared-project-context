@@ -16,6 +16,11 @@ class ListcontextTypesHandler {
     this.fsHelper = fsHelper;
   }
 
+//BUG: We are retrieving the archive folder (as indicated by todo showing up twice when
+//     listing context types on cxms). implies the other is not
+//     scoping correctly. This really should be using the contexttypes to retrieve 
+//     and filter all data though 
+
 async handle(args: ListcontextTypesArgs): Promise<{ content: ContentItem[] }> {
   try {
     // Get all standard context types (excluding 'other')

@@ -77,6 +77,9 @@ export class FileSystemHelper implements PersistenceHelper {
           const content = await fs.readFile(filePath, 'utf-8');
           return { content, error: null, name: contextNames[index] };
         } catch (error) {
+          if (error instanceof Error && (error as NodeJS.ErrnoException).code === 'ENOENT') {
+            return { content: '', error: null, name: contextNames[index] };
+          }
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
           return { content: null, error: errorMessage, name: contextNames[index] };
         }
