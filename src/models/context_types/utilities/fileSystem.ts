@@ -4,6 +4,7 @@ import * as path from 'path';
 import fs from 'fs/promises';
 import { PersistenceHelper } from '../../../types.js';
 import { PersistenceResponse } from '../../../types.js';
+import { typeMap } from '../../contexTypeFactory';
 
 export class FileSystemHelper implements PersistenceHelper {
   contextRoot: string;
@@ -42,6 +43,11 @@ export class FileSystemHelper implements PersistenceHelper {
     if (!(await this.fileExists(projectPath))) {
       return {success: false, errors: [`Project '${projectName}' does not exist. Create it first using create_project.`]};
     }
+
+    Object.keys(typeMap).forEach(async key => {
+      await this.ensureDirectoryExists(path.join(projectPath, key));
+    });
+    
     try {
       const entries = await this.readDirectory(projectPath, { withFileTypes: true, recursive: true }) as Dirent[];
       return { success: true, data: await this.onlyContextNamesFromDirectory(entries) }
@@ -56,6 +62,8 @@ export class FileSystemHelper implements PersistenceHelper {
     if (!(await this.fileExists(projectPath))) {
       return {success: false, errors: [`Project '${projectName}' does not exist. Create it first using create_project.`]};
     }
+
+    await this.ensureDirectoryExists(path.join(projectPath, contextType));
 
     try {
       const filePathPromises = contextNames.map(name => 
@@ -106,6 +114,8 @@ export class FileSystemHelper implements PersistenceHelper {
       return {success: false, errors: [`Project '${projectName}' does not exist. Create it first using create_project.`]};
     }
     
+    await this.ensureDirectoryExists(path.join(projectPath, contextType));
+    
     try {
       const fileName = contextType === 'session_summary' 
         ? this.generateTimestampedContextName(contextName) 
@@ -128,6 +138,8 @@ export class FileSystemHelper implements PersistenceHelper {
     if (!(await this.fileExists(projectPath))) {
       return {success: false, errors: [`Project '${projectName}' does not exist. Create it first using create_project.`]};
     }
+
+    await this.ensureDirectoryExists(path.join(projectPath, 'archive', contextType));
 
     try {
       const projectPath = await this.getProjectPath(projectName);
