@@ -31,6 +31,13 @@ async handle(args: ListcontextTypesArgs): Promise<{ content: ContentItem[] }> {
       });
       
       const result = await otherType.listAllContext();
+      if (!result.success) {
+        return { content: [{
+          type: 'text',
+          text: result.errors?.join('\n') || 'An unknown error occurred'
+        }]};
+      }
+
       otherContexts = result.success && result.data ? result.data : [];
     }
 

@@ -28,7 +28,7 @@ export class FileSystemHelper implements PersistenceHelper {
 
   async listProjects(): Promise< PersistenceResponse > {
     try {
-      await this.ensureDirectoryExists( this.contextRoot );
+      await this.ensureDirectoryExists(this.contextRoot);
       const entries = await this.readDirectory( path.join(this.contextRoot, 'projects'), { withFileTypes: true }) as Dirent[];
       return { success: true, data: entries.filter(entry => entry.isDirectory()).map(entry => entry.name) };
     } catch (error) {
@@ -39,6 +39,9 @@ export class FileSystemHelper implements PersistenceHelper {
 
   async listAllContextForProject(projectName: string): Promise<PersistenceResponse> {
     const projectPath = await this.getProjectPath(projectName);
+    if (!(await this.fileExists(projectPath))) {
+      return {success: false, errors: [`Project '${projectName}' does not exist. Create it first using create_project.`]};
+    }
     try {
       const entries = await this.readDirectory(projectPath, { withFileTypes: true, recursive: true }) as Dirent[];
       return { success: true, data: await this.onlyContextNamesFromDirectory(entries) }
@@ -49,6 +52,11 @@ export class FileSystemHelper implements PersistenceHelper {
   }
 
   async getContext(projectName: string, contextType: string, contextNames: string[]): Promise<PersistenceResponse> {
+    const projectPath = await this.getProjectPath(projectName);
+    if (!(await this.fileExists(projectPath))) {
+      return {success: false, errors: [`Project '${projectName}' does not exist. Create it first using create_project.`]};
+    }
+
     try {
       const filePathPromises = contextNames.map(name => 
         this.getContextFilePath(projectName, contextType, name)
@@ -94,12 +102,18 @@ export class FileSystemHelper implements PersistenceHelper {
   }
 
   async writeContext(projectName: string, contextType: string, contextName: string, content: string): Promise<PersistenceResponse> {
+    const projectPath = await this.getProjectPath(projectName); 
+    if (!(await this.fileExists(projectPath))) {
+      return {success: false, errors: [`Project '${projectName}' does not exist. Create it first using create_project.`]};
+    }
+    
     try {
       const fileName = contextType === 'session_summary' 
         ? this.generateTimestampedContextName(contextName) 
         : contextName;
-
+     
       const filePath = await this.getContextFilePath(projectName, contextType, fileName);
+      
       await fs.writeFile(filePath, content);
 
       return { success: true };
@@ -111,6 +125,11 @@ export class FileSystemHelper implements PersistenceHelper {
 
 
   async archiveContext(projectName: string, contextType: string, contextNames: string[]): Promise<PersistenceResponse> {
+    const projectPath = await this.getProjectPath(projectName);
+    if (!(await this.fileExists(projectPath))) {
+      return {success: false, errors: [`Project '${projectName}' does not exist. Create it first using create_project.`]};
+    }
+
     try {
       const projectPath = await this.getProjectPath(projectName);
       const timestamp = this.timestamp();
@@ -191,14 +210,16 @@ export class FileSystemHelper implements PersistenceHelper {
     }
   }
 
-  private timestamp(): string {
-    const now = new Date();
-    const isoString = now.toISOString();
-    return `${isoString.replace(/\.\d+Z$/, '').replace(/[:.]/g, '-')}`;
-  }
-
-  private generateTimestampedContextName(contextType: string): string {
-    return `${contextType}-${this.timestamp()}`;
+  private async fileExists(filePath: string): Promise<boolean> {
+    try {
+      await fs.access(filePath);
+      return true;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        return false;
+      }
+      throw error;
+    }
   }
 
   private async getProjectPath(projectName: string): Promise<string> {
@@ -207,7 +228,6 @@ export class FileSystemHelper implements PersistenceHelper {
 
   private async getContextFilePath(projectName: string, contextType: string, contextName?: string): Promise<string> {
     const projectPath = await this.getProjectPath(projectName)
-    await this.ensureDirectoryExists(projectPath);
     await this.ensureDirectoryExists(path.join(projectPath, contextType));
 
     switch (contextType) {
@@ -224,22 +244,20 @@ export class FileSystemHelper implements PersistenceHelper {
     }
   }
 
-  private async fileExists(filePath: string): Promise<boolean> {
-    try {
-      await fs.access(filePath);
-      return true;
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        return false;
-      }
-      throw error;
-    }
-  }
-
   private async onlyContextNamesFromDirectory(entries: Dirent[]): Promise<string[]> {
     return entries
       .filter(entry => entry.isFile())
       .map(entry => entry.name.split('.')[0].split('/').pop())
       .filter((name): name is string => name !== undefined && name !== '');
+  }
+
+  private timestamp(): string {
+    const now = new Date();
+    const isoString = now.toISOString();
+    return `${isoString.replace(/\.\d+Z$/, '').replace(/[:.]/g, '-')}`;
+  }
+
+  private generateTimestampedContextName(contextType: string): string {
+    return `${contextType}-${this.timestamp()}`;
   }
 }

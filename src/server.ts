@@ -40,8 +40,8 @@ class ContextManagerServer {
       {
         name: 'shared-project-context',
         version: '1.0.0',
-        description: `This server is intended for storing context files for AI assistants.
-Project names are one or more words separated by hyphens. For example, "my-project" or "my-project-2".
+        description: `This server stores context exclusively for AI assistants.
+
 Context files go into projects, and each project has its own context files.
 Context files are named with one or more words separated by hyphens. For example, "mental-model" or "session-summary".
 Context files are used for storing important information between sessions and for you or other AI assistants to quickly come up to date on previous discussions.
@@ -78,6 +78,17 @@ When working with this server, start by listing projects to discover what's avai
         {
           name: 'list_context_types',
           description: 'Discover what context files exist for a specific project. Use this after selecting a project to see what information is already stored (mental_model, session_summary, features, bugs, etc.) before reading or updating context. This shows you what context types are available so you can retrieve relevant information.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              project_name: { type: 'string' }
+            },
+            required: ['project_name']
+          }
+        },
+        {
+          name: 'create_project',
+          description: 'Create a new project to store context in. Project names are one or more words separated by hyphens. For example, "my-project" or "my-project-2".',
           inputSchema: {
             type: 'object',
             properties: {
@@ -169,7 +180,9 @@ When working with this server, start by listing projects to discover what's avai
               });
 
             case 'create_project':
-              return await this.createProjectHandler.handle(args.projectName as string);
+              return await this.createProjectHandler.handle({
+                projectName: args.project_name as string
+              });
 
             case 'reset_context':
               return await this.resetContextHandler.handle({
