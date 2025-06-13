@@ -44,13 +44,14 @@ export class FileSystemHelper implements PersistenceHelper {
       return {success: false, errors: [`Project '${projectName}' does not exist. Create it first using create_project.`]};
     }
 
-    Object.keys(typeMap).forEach(async key => {
-      await this.ensureDirectoryExists(path.join(projectPath, key));
-    });
-    
     try {
-      const entries = await this.readDirectory(projectPath, { withFileTypes: true, recursive: true }) as Dirent[];
-      return { success: true, data: await this.onlyContextNamesFromDirectory(entries) }
+      const entries = await Promise.all(Object.keys(typeMap).map(async key => {
+        const contextTypePath = path.join(projectPath, key);
+        await this.ensureDirectoryExists(contextTypePath);
+        return await this.readDirectory(contextTypePath, { withFileTypes: true, recursive: true }) as Dirent[];
+      }))
+
+      return { success: true, data: await this.onlyContextNamesFromDirectory(entries.flat()) }
     } catch (error) {
       const errorMessage = ( error instanceof Error ? error.message : 'Unknown error');
       return { success: false, errors: [errorMessage] };
