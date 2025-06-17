@@ -1,17 +1,20 @@
 import { ValidationResponse, ContextType, ContexTypeResponse, ContextTypeArgs } from '../../types.js';
 import { FileSystemHelper } from './utilities/fileSystem.js';
+import { MarkdownTemplateValidator } from '../../validation/MarkdownTemplateValidator.js';
 
 export class SessionSummaryType implements ContextType {
   public readonly persistenceHelper: FileSystemHelper;
   private readonly projectName: string;
   private readonly contextType: string;
   private content: string | undefined;
+  private validator: MarkdownTemplateValidator;
 
   constructor(args: ContextTypeArgs) {
     this.persistenceHelper = args.persistenceHelper;
     this.projectName = args.projectName;
     this.contextType = 'session_summary';
     this.content = args.content;
+    this.validator = new MarkdownTemplateValidator(this.persistenceHelper);
   }
 
   async update(): Promise<ContexTypeResponse> {
@@ -83,11 +86,10 @@ export class SessionSummaryType implements ContextType {
     if (trimmedContent.length === 0) {
       return {
         isValid: false,
-        validationErrors: [
-          'insufficient_content', 
-          'Session summary cannot be empty', 
-          'error'
-        ],
+        validationErrors: [{
+          type: 'content_error',
+          message: 'Session summary cannot be empty'
+        }],
         correctionGuidance: [
           '1. Add a summary of the session',
           '2. Include key decisions, changes, and next steps',
@@ -96,7 +98,30 @@ export class SessionSummaryType implements ContextType {
       };
     }
     
+    // For now, return synchronous validation result
+    // In practice, you might want to make this async or cache the validation result
     return { isValid: true };
+  }
+
+  async validateAsync(): Promise<ValidationResponse> {
+    const trimmedContent = this.content?.trim() || '';
+    
+    if (trimmedContent.length === 0) {
+      return {
+        isValid: false,
+        validationErrors: [{
+          type: 'content_error',
+          message: 'Session summary cannot be empty'
+        }],
+        correctionGuidance: [
+          '1. Add a summary of the session',
+          '2. Include key decisions, changes, and next steps',
+          '3. Ensure content is not just whitespace'
+        ]
+      };
+    }
+    
+    return await this.validator.validateAgainstTemplate(trimmedContent, 'session_summary');
   }
 
   private async getAllContexts(): Promise<string[]> {

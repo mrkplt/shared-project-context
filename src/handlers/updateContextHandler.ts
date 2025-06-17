@@ -1,6 +1,6 @@
 import { FileSystemHelper } from '../models/context_types/utilities/fileSystem';
 import  ContextTypeFactory from '../models/contexTypeFactory';
-import { ContentItem } from '../types';
+import { ContentItem, ValidationError } from '../types';
 
 interface UpdateContextArgs {
   projectName: string;
@@ -27,6 +27,39 @@ class UpdateContextHandler {
       contextName: args.contextName,
       content: args.content
     });
+
+    // Validate content for core types that support template validation
+    if (['session_summary', 'mental_model', 'features'].includes(args.contextType)) {
+      let validationResult;
+      
+      if ('validateAsync' in contextType && typeof contextType.validateAsync === 'function') {
+        validationResult = await contextType.validateAsync();
+      } else {
+        validationResult = contextType.validate();
+      }
+      
+      if (!validationResult.isValid) {
+        const errorMessages = [
+          'Validation failed:',
+          ...(validationResult.validationErrors?.map((e: ValidationError) => `- ${e.message}`) || []),
+          '',
+          'Correction guidance:',
+          ...(validationResult.correctionGuidance || []),
+          '',
+          'Template used for validation:',
+          '```markdown',
+          validationResult.templateUsed || '',
+          '```'
+        ];
+        
+        return {
+          content: [{
+            type: 'text',
+            text: errorMessages.join('\n')
+          }]
+        };
+      }
+    }
 
     const result = await contextType.update()
   

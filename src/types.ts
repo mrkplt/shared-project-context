@@ -10,8 +10,16 @@
    // Validation Response Types
    export interface ValidationResponse {
     isValid: boolean;
-    validationErrors?: string[];
+    validationErrors?: ValidationError[];
     correctionGuidance?: string[];
+    templateUsed?: string;
+   }
+
+   export interface ValidationError {
+    type: 'missing_header' | 'incorrect_structure' | 'invalid_format' | 'content_error';
+    section?: string;
+    message: string;
+    line?: number;
    }
 
 
@@ -63,5 +71,6 @@ export interface PersistenceHelper {
    listAllContextForProject(projectName: string): Promise<PersistenceResponse>;
    writeContext(projectName: string, contextType: string, contextName: string, content: string): Promise<PersistenceResponse>
    getContext(projectName: string, contextType: string, contextName: string[]): Promise<PersistenceResponse>;
-   archiveContext(projectName: string, contextType: string, contextName: string[]): Promise<PersistenceResponse>
+   archiveContext(projectName: string, contextType: string, contextName: string[]): Promise<PersistenceResponse>;
+   getTemplate(contextType: string): Promise<PersistenceResponse>;
 }

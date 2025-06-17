@@ -1,5 +1,6 @@
 import { ValidationResponse, ContextType, ContexTypeResponse, PersistenceResponse, ContextTypeArgs } from '../../types.js';
 import { FileSystemHelper } from './utilities/fileSystem.js';
+import { MarkdownTemplateValidator } from '../../validation/MarkdownTemplateValidator.js';
 
 export class MentalModelType implements ContextType {
   private static readonly DEFAULT_FILE_NAME = 'mental_model';
@@ -8,12 +9,14 @@ export class MentalModelType implements ContextType {
   private readonly projectName: string;
   private readonly contextName: string;
   private readonly content: string | undefined;
+  private validator: MarkdownTemplateValidator;
 
   constructor(args: ContextTypeArgs) {
     this.persistenceHelper = args.persistenceHelper;
     this.projectName = args.projectName;
     this.contextName = MentalModelType.DEFAULT_FILE_NAME || args.contextName; // Disregard contextName if provided
     this.content = args.content;
+    this.validator = new MarkdownTemplateValidator(this.persistenceHelper);
   }
 
   async update(): Promise<ContexTypeResponse> {
@@ -84,11 +87,10 @@ export class MentalModelType implements ContextType {
     if (trimmedContent.length === 0) {
       return {
         isValid: false,
-        validationErrors: [
-          'insufficient_content', 
-          'Content cannot be empty', 
-          'error'
-        ],
+        validationErrors: [{
+          type: 'content_error',
+          message: 'Content cannot be empty'
+        }],
         correctionGuidance: [
           '1. Add a description of the mental model',
           '2. Include relevant concepts and relationships',
@@ -98,5 +100,26 @@ export class MentalModelType implements ContextType {
     }
     
     return { isValid: true };
+  }
+
+  async validateAsync(): Promise<ValidationResponse> {
+    const trimmedContent = this.content?.trim() || '';
+    
+    if (trimmedContent.length === 0) {
+      return {
+        isValid: false,
+        validationErrors: [{
+          type: 'content_error',
+          message: 'Content cannot be empty'
+        }],
+        correctionGuidance: [
+          '1. Add a description of the mental model',
+          '2. Include relevant concepts and relationships',
+          '3. Ensure content is not just whitespace'
+        ]
+      };
+    }
+    
+    return await this.validator.validateAgainstTemplate(trimmedContent, 'mental_model');
   }
 }

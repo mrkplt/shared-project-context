@@ -282,6 +282,38 @@ export class FileSystemHelper implements PersistenceHelper {
     return `${isoString.replace(/\.\d+Z$/, '').replace(/[:.]/g, '-')}`;
   }
 
+  async getTemplate(contextType: string): Promise<PersistenceResponse> {
+    const templateFiles: Record<string, string> = {
+      'session_summary': 'session_summary_template.md',
+      'mental_model': 'mental_model.md',
+      'features': 'features.md'
+    };
+    
+    const templateFile = templateFiles[contextType];
+    if (!templateFile) {
+      return {
+        success: false,
+        errors: [`No template found for context type: ${contextType}`]
+      };
+    }
+    
+    try {
+      // Get the template from the templates directory in the project root
+      const templatePath = path.join(__dirname, '../../../../templates', templateFile);
+      const templateContent = await fs.readFile(templatePath, 'utf-8');
+      
+      return {
+        success: true,
+        data: [templateContent]
+      };
+    } catch (error) {
+      return {
+        success: false,
+        errors: [`Failed to load template for ${contextType}: ${error instanceof Error ? error.message : 'Unknown error'}`]
+      };
+    }
+  }
+
   private generateTimestampedContextName(contextType: string): string {
     return `${contextType}-${this.timestamp()}`;
   }

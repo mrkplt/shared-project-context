@@ -108,9 +108,10 @@ export class OtherType implements ContextType {
     if (!this.content) {
       return {
         isValid: false,
-        validationErrors: [
-          'insufficient_content', 'Content is required to validate other type', 'error'
-        ],
+        validationErrors: [{
+          type: 'content_error',
+          message: 'Content is required to validate other type'
+        }],
         correctionGuidance: [
           '1. Add meaningful content to your file',
           '2. Include relevant information for your use case',
@@ -123,9 +124,10 @@ export class OtherType implements ContextType {
     if (trimmedContent.length === 0) {
       return {
         isValid: false,
-        validationErrors: [
-          'insufficient_content', 'Content cannot be empty', 'error'
-        ],
+        validationErrors: [{
+          type: 'content_error',
+          message: 'Content cannot be empty'
+        }],
         correctionGuidance: [
           '1. Add meaningful content to your file',
           '2. Include relevant information for your use case',
