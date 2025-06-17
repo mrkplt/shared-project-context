@@ -284,10 +284,11 @@ export class FileSystemHelper implements PersistenceHelper {
 
   async getTemplate(projectName: string, contextType: string): Promise<PersistenceResponse> {
     try {
-      // First try to load project-specific custom template
       const projectPath = await this.getProjectPath(projectName);
-      const projectTemplatePath = path.join(projectPath, 'templates', `${contextType}.md`);
+      const projectTemplatesDir = path.join(projectPath, 'templates');
+      const projectTemplatePath = path.join(projectTemplatesDir, `${contextType}.md`);
       
+      // Check if project template exists
       try {
         const projectTemplateContent = await fs.readFile(projectTemplatePath, 'utf-8');
         return {
@@ -295,15 +296,31 @@ export class FileSystemHelper implements PersistenceHelper {
           data: [projectTemplateContent]
         };
       } catch (projectError) {
-        // If project template doesn't exist, fall back to repository default template
-        const repositoryRoot = path.resolve(__dirname, '../../../..');
-        const defaultTemplatePath = path.join(repositoryRoot, 'templates', `${contextType}.md`);
-        
-        const defaultTemplateContent = await fs.readFile(defaultTemplatePath, 'utf-8');
-        return {
-          success: true,
-          data: [defaultTemplateContent]
-        };
+        // Project template doesn't exist, initialize it from repository default
+        try {
+          const repositoryRoot = path.resolve(__dirname, '../../../..');
+          const defaultTemplatePath = path.join(repositoryRoot, 'templates', `${contextType}.md`);
+          
+          // Read the repository default template
+          const defaultTemplateContent = await fs.readFile(defaultTemplatePath, 'utf-8');
+          
+          // Ensure project templates directory exists
+          await this.ensureDirectoryExists(projectTemplatesDir);
+          
+          // Copy the default template to the project
+          await fs.writeFile(projectTemplatePath, defaultTemplateContent);
+          
+          // Return the template content (now copied to project)
+          return {
+            success: true,
+            data: [defaultTemplateContent]
+          };
+        } catch (repositoryError) {
+          return {
+            success: false,
+            errors: [`Failed to load or initialize template for ${contextType}: ${repositoryError instanceof Error ? repositoryError.message : 'Unknown error'}`]
+          };
+        }
       }
     } catch (error) {
       return {
