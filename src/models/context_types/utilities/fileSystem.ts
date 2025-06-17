@@ -283,20 +283,6 @@ export class FileSystemHelper implements PersistenceHelper {
   }
 
   async getTemplate(contextType: string): Promise<PersistenceResponse> {
-    const templateFiles: Record<string, string> = {
-      'session_summary': 'session_summary_template.md',
-      'mental_model': 'mental_model.md',
-      'features': 'features.md'
-    };
-    
-    const templateFile = templateFiles[contextType];
-    if (!templateFile) {
-      return {
-        success: false,
-        errors: [`No template found for context type: ${contextType}`]
-      };
-    }
-    
     try {
       // Get the template from the templates directory in the project root
       // Find the project root by looking for package.json
@@ -310,7 +296,7 @@ export class FileSystemHelper implements PersistenceHelper {
         }
       }
       
-      const templatePath = path.join(projectRoot, 'templates', templateFile);
+      const templatePath = path.join(projectRoot, 'templates', `${contextType}.md`);
       const templateContent = await fs.readFile(templatePath, 'utf-8');
       
       return {
