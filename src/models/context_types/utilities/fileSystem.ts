@@ -284,25 +284,26 @@ export class FileSystemHelper implements PersistenceHelper {
 
   async getTemplate(contextType: string): Promise<PersistenceResponse> {
     try {
-      // Get the template from the templates directory in the project root
-      // Find the project root by looking for package.json
-      let projectRoot = __dirname;
-      while (projectRoot !== path.dirname(projectRoot)) {
-        try {
-          await fs.access(path.join(projectRoot, 'package.json'));
-          break;
-        } catch {
-          projectRoot = path.dirname(projectRoot);
-        }
+      // First try to load user's custom template from their templates directory
+      const userTemplatesPath = path.join(this.contextRoot, 'templates', `${contextType}.md`);
+      
+      try {
+        const userTemplateContent = await fs.readFile(userTemplatesPath, 'utf-8');
+        return {
+          success: true,
+          data: [userTemplateContent]
+        };
+      } catch (userError) {
+        // If user template doesn't exist, fall back to repository default template
+        const repositoryRoot = path.resolve(__dirname, '../../../..');
+        const defaultTemplatePath = path.join(repositoryRoot, 'templates', `${contextType}.md`);
+        
+        const defaultTemplateContent = await fs.readFile(defaultTemplatePath, 'utf-8');
+        return {
+          success: true,
+          data: [defaultTemplateContent]
+        };
       }
-      
-      const templatePath = path.join(projectRoot, 'templates', `${contextType}.md`);
-      const templateContent = await fs.readFile(templatePath, 'utf-8');
-      
-      return {
-        success: true,
-        data: [templateContent]
-      };
     } catch (error) {
       return {
         success: false,
