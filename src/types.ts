@@ -42,7 +42,7 @@
       update(): Promise<ContexTypeResponse>;
       read(): Promise<ContexTypeResponse>;
       reset(): Promise<ContexTypeResponse>;
-      validate(): ValidationResponse;
+      validate(): Promise<ValidationResponse>;
       persistenceHelper: FileSystemHelper;
    }
 

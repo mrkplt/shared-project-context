@@ -28,37 +28,35 @@ class UpdateContextHandler {
       content: args.content
     });
 
-    // Validate content for core types that support template validation
-    if (['session_summary', 'mental_model', 'features'].includes(args.contextType)) {
-      let validationResult;
+    // Validate content for all context types
+    const validationResult = await contextType.validate();
+    
+    if (!validationResult.isValid) {
+      const errorMessages = [
+        'Validation failed:',
+        ...(validationResult.validationErrors?.map((e: ValidationError) => `- ${e.message}`) || []),
+        '',
+        'Correction guidance:',
+        ...(validationResult.correctionGuidance || [])
+      ];
       
-      if ('validateAsync' in contextType && typeof contextType.validateAsync === 'function') {
-        validationResult = await contextType.validateAsync();
-      } else {
-        validationResult = contextType.validate();
-      }
-      
-      if (!validationResult.isValid) {
-        const errorMessages = [
-          'Validation failed:',
-          ...(validationResult.validationErrors?.map((e: ValidationError) => `- ${e.message}`) || []),
-          '',
-          'Correction guidance:',
-          ...(validationResult.correctionGuidance || []),
+      // Only include template information for core types that support template validation
+      if (['session_summary', 'mental_model', 'features'].includes(args.contextType) && validationResult.templateUsed) {
+        errorMessages.push(
           '',
           'Template used for validation:',
           '```markdown',
-          validationResult.templateUsed || '',
+          validationResult.templateUsed,
           '```'
-        ];
-        
-        return {
-          content: [{
-            type: 'text',
-            text: errorMessages.join('\n')
-          }]
-        };
+        );
       }
+      
+      return {
+        content: [{
+          type: 'text',
+          text: errorMessages.join('\n')
+        }]
+      };
     }
 
     const result = await contextType.update()

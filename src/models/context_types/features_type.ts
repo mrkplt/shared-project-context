@@ -74,28 +74,7 @@ export class FeaturesType implements ContextType {
     return { success: true };
 }
 
-  validate(): ValidationResponse {
-    const trimmedContent = this.content?.trim() || '';
-    
-    if (trimmedContent.length === 0) {
-      return {
-        isValid: false,
-        validationErrors: [{
-          type: 'content_error',
-          message: 'Content cannot be empty'
-        }],
-        correctionGuidance: [
-          '1. Add a description of the features',
-          '2. Include relevant details about functionality',
-          '3. Ensure content is not just whitespace'
-        ]
-      };
-    }
-    
-    return { isValid: true };
-  }
-
-  async validateAsync(): Promise<ValidationResponse> {
+  async validate(): Promise<ValidationResponse> {
     const trimmedContent = this.content?.trim() || '';
     
     if (trimmedContent.length === 0) {

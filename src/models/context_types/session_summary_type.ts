@@ -80,30 +80,7 @@ export class SessionSummaryType implements ContextType {
     return { success: true };
   }
 
-  validate(): ValidationResponse {
-    const trimmedContent = this.content?.trim() || '';
-    
-    if (trimmedContent.length === 0) {
-      return {
-        isValid: false,
-        validationErrors: [{
-          type: 'content_error',
-          message: 'Session summary cannot be empty'
-        }],
-        correctionGuidance: [
-          '1. Add a summary of the session',
-          '2. Include key decisions, changes, and next steps',
-          '3. Ensure content is not just whitespace'
-        ]
-      };
-    }
-    
-    // For now, return synchronous validation result
-    // In practice, you might want to make this async or cache the validation result
-    return { isValid: true };
-  }
-
-  async validateAsync(): Promise<ValidationResponse> {
+  async validate(): Promise<ValidationResponse> {
     const trimmedContent = this.content?.trim() || '';
     
     if (trimmedContent.length === 0) {

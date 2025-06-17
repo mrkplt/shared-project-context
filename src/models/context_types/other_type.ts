@@ -104,7 +104,7 @@ export class OtherType implements ContextType {
     };
   }
 
-  validate(): ValidationResponse {
+  async validate(): Promise<ValidationResponse> {
     if (!this.content) {
       return {
         isValid: false,
