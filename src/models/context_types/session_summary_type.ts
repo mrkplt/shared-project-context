@@ -14,7 +14,7 @@ export class SessionSummaryType implements ContextType {
     this.projectName = args.projectName;
     this.contextType = 'session_summary';
     this.content = args.content;
-    this.validator = new MarkdownTemplateValidator(this.persistenceHelper);
+    this.validator = new MarkdownTemplateValidator(this.persistenceHelper, this.projectName);
   }
 
   async update(): Promise<ContexTypeResponse> {

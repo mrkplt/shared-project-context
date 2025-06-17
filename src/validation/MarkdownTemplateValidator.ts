@@ -20,9 +20,11 @@ interface TemplateStructure {
 
 export class MarkdownTemplateValidator {
   private persistenceHelper: PersistenceHelper;
+  private projectName: string;
 
-  constructor(persistenceHelper: PersistenceHelper) {
+  constructor(persistenceHelper: PersistenceHelper, projectName: string) {
     this.persistenceHelper = persistenceHelper;
+    this.projectName = projectName;
   }
 
   async validateAgainstTemplate(content: string, contextType: string): Promise<ValidationResponse> {
@@ -66,7 +68,7 @@ export class MarkdownTemplateValidator {
 
   private async loadTemplate(contextType: string): Promise<string> {
     try {
-      const templateResult = await this.persistenceHelper.getTemplate(contextType);
+      const templateResult = await this.persistenceHelper.getTemplate(this.projectName, contextType);
       
       if (!templateResult.success) {
         throw new Error(templateResult.errors?.join(', ') || 'Failed to load template');

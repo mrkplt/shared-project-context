@@ -16,7 +16,7 @@ export class FeaturesType implements ContextType {
     this.projectName = args.projectName;
     this.contextName = FeaturesType.DEFAULT_FILE_NAME || args.contextName; // Disregard contextName if provided
     this.content = args.content;
-    this.validator = new MarkdownTemplateValidator(this.persistenceHelper);
+    this.validator = new MarkdownTemplateValidator(this.persistenceHelper, this.projectName);
   }
 
   async update(): Promise<ContexTypeResponse> {

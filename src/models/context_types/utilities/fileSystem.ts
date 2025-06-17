@@ -282,19 +282,20 @@ export class FileSystemHelper implements PersistenceHelper {
     return `${isoString.replace(/\.\d+Z$/, '').replace(/[:.]/g, '-')}`;
   }
 
-  async getTemplate(contextType: string): Promise<PersistenceResponse> {
+  async getTemplate(projectName: string, contextType: string): Promise<PersistenceResponse> {
     try {
-      // First try to load user's custom template from their templates directory
-      const userTemplatesPath = path.join(this.contextRoot, 'templates', `${contextType}.md`);
+      // First try to load project-specific custom template
+      const projectPath = await this.getProjectPath(projectName);
+      const projectTemplatePath = path.join(projectPath, 'templates', `${contextType}.md`);
       
       try {
-        const userTemplateContent = await fs.readFile(userTemplatesPath, 'utf-8');
+        const projectTemplateContent = await fs.readFile(projectTemplatePath, 'utf-8');
         return {
           success: true,
-          data: [userTemplateContent]
+          data: [projectTemplateContent]
         };
-      } catch (userError) {
-        // If user template doesn't exist, fall back to repository default template
+      } catch (projectError) {
+        // If project template doesn't exist, fall back to repository default template
         const repositoryRoot = path.resolve(__dirname, '../../../..');
         const defaultTemplatePath = path.join(repositoryRoot, 'templates', `${contextType}.md`);
         
