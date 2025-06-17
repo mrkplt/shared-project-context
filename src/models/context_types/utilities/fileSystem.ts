@@ -299,7 +299,18 @@ export class FileSystemHelper implements PersistenceHelper {
     
     try {
       // Get the template from the templates directory in the project root
-      const templatePath = path.join(__dirname, '../../../../templates', templateFile);
+      // Find the project root by looking for package.json
+      let projectRoot = __dirname;
+      while (projectRoot !== path.dirname(projectRoot)) {
+        try {
+          await fs.access(path.join(projectRoot, 'package.json'));
+          break;
+        } catch {
+          projectRoot = path.dirname(projectRoot);
+        }
+      }
+      
+      const templatePath = path.join(projectRoot, 'templates', templateFile);
       const templateContent = await fs.readFile(templatePath, 'utf-8');
       
       return {
