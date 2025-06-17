@@ -31,8 +31,8 @@ export class MarkdownTemplateValidator {
       const template = await this.loadTemplate(contextType);
       
       // Parse both template and content
-      const templateStructure = await this.parseTemplateStructure(template);
-      const contentStructure = await this.parseContentStructure(content);
+      const templateStructure = this.parseMarkdownStructure(template);
+      const contentStructure = this.parseMarkdownStructure(content);
       
       // Validate structure
       const errors = this.validateStructure(contentStructure, templateStructure);
@@ -78,16 +78,16 @@ export class MarkdownTemplateValidator {
     }
   }
 
-  private async parseTemplateStructure(template: string): Promise<TemplateStructure> {
+  private parseMarkdownStructure(markdown: string): TemplateStructure {
     const processor = unified()
       .use(remarkParse)
       .use(remarkFrontmatter);
     
-    const tree = processor.parse(template) as Root;
+    const tree = processor.parse(markdown) as Root;
     
-    const requiredHeaders: string[] = [];
+    const headers: string[] = [];
     const headerHierarchy = new Map<string, number>();
-    const allowedSubHeaders = new Map<string, string[]>();
+    const subHeaders = new Map<string, string[]>();
     
     let currentParentHeader: string | null = null;
     
@@ -95,64 +95,25 @@ export class MarkdownTemplateValidator {
       if (node.type === 'heading' && node.depth && node.children) {
         const headerText = this.extractHeaderText(node);
         if (headerText) {
-          requiredHeaders.push(headerText);
+          headers.push(headerText);
           headerHierarchy.set(headerText, node.depth);
           
           if (node.depth === 2) {
             currentParentHeader = headerText;
-            allowedSubHeaders.set(headerText, []);
+            subHeaders.set(headerText, []);
           } else if (node.depth === 3 && currentParentHeader) {
-            const subHeaders = allowedSubHeaders.get(currentParentHeader) || [];
-            subHeaders.push(headerText);
-            allowedSubHeaders.set(currentParentHeader, subHeaders);
+            const currentSubHeaders = subHeaders.get(currentParentHeader) || [];
+            currentSubHeaders.push(headerText);
+            subHeaders.set(currentParentHeader, currentSubHeaders);
           }
         }
       }
     });
     
     return {
-      requiredHeaders,
+      requiredHeaders: headers,
       headerHierarchy,
-      allowedSubHeaders
-    };
-  }
-
-  private async parseContentStructure(content: string): Promise<TemplateStructure> {
-    const processor = unified()
-      .use(remarkParse)
-      .use(remarkFrontmatter);
-    
-    const tree = processor.parse(content) as Root;
-    
-    const foundHeaders: string[] = [];
-    const headerHierarchy = new Map<string, number>();
-    const foundSubHeaders = new Map<string, string[]>();
-    
-    let currentParentHeader: string | null = null;
-    
-    this.visitNode(tree, (node: MarkdownNode) => {
-      if (node.type === 'heading' && node.depth && node.children) {
-        const headerText = this.extractHeaderText(node);
-        if (headerText) {
-          foundHeaders.push(headerText);
-          headerHierarchy.set(headerText, node.depth);
-          
-          if (node.depth === 2) {
-            currentParentHeader = headerText;
-            foundSubHeaders.set(headerText, []);
-          } else if (node.depth === 3 && currentParentHeader) {
-            const subHeaders = foundSubHeaders.get(currentParentHeader) || [];
-            subHeaders.push(headerText);
-            foundSubHeaders.set(currentParentHeader, subHeaders);
-          }
-        }
-      }
-    });
-    
-    return {
-      requiredHeaders: foundHeaders,
-      headerHierarchy,
-      allowedSubHeaders: foundSubHeaders
+      allowedSubHeaders: subHeaders
     };
   }
 
