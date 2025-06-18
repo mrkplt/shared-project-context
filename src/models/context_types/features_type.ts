@@ -1,6 +1,6 @@
 import { ValidationResponse, ContextType, ContexTypeResponse, PersistenceResponse, ContextTypeArgs } from '../../types.js';
 import { FileSystemHelper } from './utilities/fileSystem.js';
-import { MarkdownTemplateValidator } from './utilities/MarkdownTemplateValidator.js';
+import { MarkdownTemplateValidator } from './utilities/markdownTemplateValidator.js';
 
 export class FeaturesType implements ContextType {
   private static readonly DEFAULT_FILE_NAME = 'features';

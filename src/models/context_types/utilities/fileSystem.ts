@@ -5,6 +5,7 @@ import fs from 'fs/promises';
 import { PersistenceHelper } from '../../../types.js';
 import { PersistenceResponse } from '../../../types.js';
 import { typeMap } from '../../contexTypeFactory';
+const { DateTime } = require('luxon');
 
 export class FileSystemHelper implements PersistenceHelper {
   contextRoot: string;
@@ -277,9 +278,8 @@ export class FileSystemHelper implements PersistenceHelper {
   }
 
   private timestamp(): string {
-    const now = new Date();
-    const isoString = now.toISOString();
-    return `${isoString.replace(/\.\d+Z$/, '').replace(/[:.]/g, '-')}`;
+    // Format: YYYY-MM-DDTHH-MM-ss-SSSZ (filesystem-friendly ISO 8601)
+    return DateTime.utc().toFormat('yyyy-MM-dd\'T\'HH-mm-ss-SSS\'Z\'');
   }
 
   async getTemplate(projectName: string, contextType: string): Promise<PersistenceResponse> {

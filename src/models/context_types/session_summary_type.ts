@@ -1,6 +1,6 @@
 import { ValidationResponse, ContextType, ContexTypeResponse, ContextTypeArgs } from '../../types.js';
 import { FileSystemHelper } from './utilities/fileSystem.js';
-import { MarkdownTemplateValidator } from './utilities/MarkdownTemplateValidator.js';
+import { MarkdownTemplateValidator } from './utilities/markdownTemplateValidator.js';
 
 export class SessionSummaryType implements ContextType {
   public readonly persistenceHelper: FileSystemHelper;
