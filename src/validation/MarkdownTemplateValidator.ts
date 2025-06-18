@@ -30,7 +30,20 @@ export class MarkdownTemplateValidator {
   async validateAgainstTemplate(content: string, contextType: string): Promise<ValidationResponse> {
     try {
       // Load the template
-      const template = await this.loadTemplate(contextType);
+      const templateResult = await this.persistenceHelper.getTemplate(this.projectName, contextType);
+      if (!templateResult.success || !templateResult.data){
+        return {
+          isValid: false,
+          validationErrors: [{
+            type: 'content_error',
+            message: `Validation failed: ${templateResult.errors?.[0]}`
+          }],
+          correctionGuidance: ['Unable to validate content due to internal error'],
+          templateUsed: ''
+        };
+      }
+
+      const template = templateResult.data[0];
       
       // Parse both template and content
       const templateStructure = this.parseMarkdownStructure(template);
@@ -66,20 +79,6 @@ export class MarkdownTemplateValidator {
     }
   }
 
-  private async loadTemplate(contextType: string): Promise<string> {
-    try {
-      const templateResult = await this.persistenceHelper.getTemplate(this.projectName, contextType);
-      
-      if (!templateResult.success) {
-        throw new Error(templateResult.errors?.join(', ') || 'Failed to load template');
-      }
-      
-      return templateResult.data?.[0] || '';
-    } catch (error) {
-      throw new Error(`Failed to load template for ${contextType}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  }
-
   private parseMarkdownStructure(markdown: string): TemplateStructure {
     const processor = unified()
       .use(remarkParse)
@@ -91,32 +90,40 @@ export class MarkdownTemplateValidator {
     const headerHierarchy = new Map<string, number>();
     const subHeaders = new Map<string, string[]>();
     
-    let currentParentHeader: string | null = null;
+    const parentStack: Array<{ text: string; depth: number }> = [];
     
     this.visitNode(tree, (node: MarkdownNode) => {
       if (node.type === 'heading' && node.depth && node.children) {
         const headerText = this.extractHeaderText(node);
-        if (headerText) {
-          headers.push(headerText);
-          headerHierarchy.set(headerText, node.depth);
-          
-          if (node.depth === 2) {
-            currentParentHeader = headerText;
-            subHeaders.set(headerText, []);
-          } else if (node.depth === 3 && currentParentHeader) {
-            const currentSubHeaders = subHeaders.get(currentParentHeader) || [];
-            currentSubHeaders.push(headerText);
-            subHeaders.set(currentParentHeader, currentSubHeaders);
-          }
+        if (!headerText) return;
+  
+        headers.push(headerText);
+        headerHierarchy.set(headerText, node.depth);
+  
+        // Pop headers at same or deeper level
+        while (parentStack.length > 0 && 
+               parentStack[parentStack.length - 1].depth >= node.depth) {
+          parentStack.pop();
         }
+  
+        // Track parent-child relationship
+        if (parentStack.length > 0) {
+          const parent = parentStack[parentStack.length - 1];
+          const children = subHeaders.get(parent.text) || [];
+          children.push(headerText);
+          subHeaders.set(parent.text, children);
+        }
+  
+        // Initialize children array for potential future children
+        if (!subHeaders.has(headerText)) {
+          subHeaders.set(headerText, []);
+        }
+  
+        parentStack.push({ text: headerText, depth: node.depth });
       }
     });
     
-    return {
-      requiredHeaders: headers,
-      headerHierarchy,
-      allowedSubHeaders: subHeaders
-    };
+    return { requiredHeaders: headers, headerHierarchy, allowedSubHeaders: subHeaders };
   }
 
   private validateStructure(contentStructure: TemplateStructure, templateStructure: TemplateStructure): ValidationError[] {
