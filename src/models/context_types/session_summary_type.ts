@@ -1,17 +1,20 @@
 import { ValidationResponse, ContextType, ContexTypeResponse, ContextTypeArgs } from '../../types.js';
 import { FileSystemHelper } from './utilities/fileSystem.js';
+import { MarkdownTemplateValidator } from './utilities/markdownTemplateValidator.js';
 
 export class SessionSummaryType implements ContextType {
   public readonly persistenceHelper: FileSystemHelper;
   private readonly projectName: string;
   private readonly contextType: string;
   private content: string | undefined;
+  private validator: MarkdownTemplateValidator;
 
   constructor(args: ContextTypeArgs) {
     this.persistenceHelper = args.persistenceHelper;
     this.projectName = args.projectName;
     this.contextType = 'session_summary';
     this.content = args.content;
+    this.validator = new MarkdownTemplateValidator(this.persistenceHelper, this.projectName);
   }
 
   async update(): Promise<ContexTypeResponse> {
@@ -77,17 +80,16 @@ export class SessionSummaryType implements ContextType {
     return { success: true };
   }
 
-  validate(): ValidationResponse {
+  async validate(): Promise<ValidationResponse> {
     const trimmedContent = this.content?.trim() || '';
     
     if (trimmedContent.length === 0) {
       return {
         isValid: false,
-        validationErrors: [
-          'insufficient_content', 
-          'Session summary cannot be empty', 
-          'error'
-        ],
+        validationErrors: [{
+          type: 'content_error',
+          message: 'Session summary cannot be empty'
+        }],
         correctionGuidance: [
           '1. Add a summary of the session',
           '2. Include key decisions, changes, and next steps',
@@ -96,7 +98,7 @@ export class SessionSummaryType implements ContextType {
       };
     }
     
-    return { isValid: true };
+    return await this.validator.validateAgainstTemplate(trimmedContent, 'session_summary');
   }
 
   private async getAllContexts(): Promise<string[]> {

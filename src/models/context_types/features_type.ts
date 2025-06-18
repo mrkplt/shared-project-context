@@ -1,5 +1,6 @@
 import { ValidationResponse, ContextType, ContexTypeResponse, PersistenceResponse, ContextTypeArgs } from '../../types.js';
 import { FileSystemHelper } from './utilities/fileSystem.js';
+import { MarkdownTemplateValidator } from './utilities/markdownTemplateValidator.js';
 
 export class FeaturesType implements ContextType {
   private static readonly DEFAULT_FILE_NAME = 'features';
@@ -8,12 +9,14 @@ export class FeaturesType implements ContextType {
   private readonly projectName: string;
   private readonly contextName: string;
   private readonly content: string | undefined;
+  private validator: MarkdownTemplateValidator;
 
   constructor(args: ContextTypeArgs) {
     this.persistenceHelper = args.persistenceHelper;
     this.projectName = args.projectName;
     this.contextName = FeaturesType.DEFAULT_FILE_NAME || args.contextName; // Disregard contextName if provided
     this.content = args.content;
+    this.validator = new MarkdownTemplateValidator(this.persistenceHelper, this.projectName);
   }
 
   async update(): Promise<ContexTypeResponse> {
@@ -71,17 +74,16 @@ export class FeaturesType implements ContextType {
     return { success: true };
 }
 
-  validate(): ValidationResponse {
+  async validate(): Promise<ValidationResponse> {
     const trimmedContent = this.content?.trim() || '';
     
     if (trimmedContent.length === 0) {
       return {
         isValid: false,
-        validationErrors: [
-          'insufficient_content', 
-          'Content cannot be empty', 
-          'error'
-        ],
+        validationErrors: [{
+          type: 'content_error',
+          message: 'Content cannot be empty'
+        }],
         correctionGuidance: [
           '1. Add a description of the features',
           '2. Include relevant details about functionality',
@@ -90,6 +92,6 @@ export class FeaturesType implements ContextType {
       };
     }
     
-    return { isValid: true };
+    return await this.validator.validateAgainstTemplate(trimmedContent, 'features');
   }
 }

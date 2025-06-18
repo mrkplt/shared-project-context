@@ -6,34 +6,37 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprot
 
 // Import handlers
 import ListProjectsHandler from './handlers/listProjectsHandler';
-import ListcontextTypesHandler from './handlers/listContextTypesHandler';
+import ListContextsHandler from './handlers/listContextsHandler';
 import GetContextHandler from './handlers/getContextHandler';
 import UpdateContextHandler from './handlers/updateContextHandler';
 import CreateProjectHandler from './handlers/createProjectHandler';
 import { FileSystemHelper } from './models/context_types/utilities/fileSystem';
 import ResetContextHandler from './handlers/resetContextHandler';
+import GetProjectTemplatesHandler from './handlers/getProjectTemplatesHandler';
 
 // Main server class that implements the MCP protocol
 class ContextManagerServer {
   private server: Server;
   private fsHelper: FileSystemHelper;
   private listProjectsHandler!: ListProjectsHandler;
-  private listcontextTypesHandler!: ListcontextTypesHandler;
+  private listContextsHandler!: ListContextsHandler;
   private getContextHandler!: GetContextHandler;
   private updateContextHandler!: UpdateContextHandler;
   private createProjectHandler!: CreateProjectHandler;
   private resetContextHandler!: ResetContextHandler;
+  private getProjectTemplatesHandler!: GetProjectTemplatesHandler;
 
   constructor() {
     // Initialize filesystem helper
     this.fsHelper = new FileSystemHelper();
     
     this.listProjectsHandler = new ListProjectsHandler(this.fsHelper);
-    this.listcontextTypesHandler = new ListcontextTypesHandler(this.fsHelper);
+    this.listContextsHandler = new ListContextsHandler(this.fsHelper);
     this.createProjectHandler = new CreateProjectHandler(this.fsHelper);
     this.getContextHandler = new GetContextHandler(this.fsHelper);
     this.updateContextHandler = new UpdateContextHandler(this.fsHelper);
     this.resetContextHandler = new ResetContextHandler(this.fsHelper);
+    this.getProjectTemplatesHandler = new GetProjectTemplatesHandler(this.fsHelper);
     
     // Initialize MCP server with proper configuration
     this.server = new Server(
@@ -42,19 +45,21 @@ class ContextManagerServer {
         version: '1.0.0',
         description: `This server stores shared context exclusively for AI assistants.
 
-This server manages four context types, each with distinct behaviors:
-- session_summary: Chronological log of the development session activity. Avoid code samples! Always appends new context.
-- mental_model: Technical architecture understanding
-- features: A list of features, their implementation status and other relevant information
-- other: Arbitrary named contexts
-
-Contexts go into projects, and each project has its own context files.
-Contexts are named with one or more words separated by hyphens. For example, "mental-model" or "session-summary".
+Contexts are saved into into projects, and each project has its own context files.
 Contexts are used for storing important information between sessions and for you or other AI assistants to quickly come up to date on previous discussions.
 Contexts should be kept concise and focused.
+All contexts except "other" follow must follow a prescribed template and will be validated.
+
+This server manages four context types, each with distinct behaviors:
+- session_summary: Chronological log of the development session activity. AVOID code samples! Always appends new context.
+- mental_model: Technical architecture understanding
+- features: A list of features, their implementation status and other relevant information
+- other: The "other" type is a catch-all for individually named arbitrary contexts.
 
 You should refresh your context if some time has passed since you last used this server.
-When working with this server, start by listing projects to discover what's available, then list file types for your chosen project to see what context already exists before reading or updating files.`,
+
+When working with this server, start by listing projects, then list contexts for your project to see what information is already available.
+Call the project_templates tool before updating context to retrieve the required template for the context type you are updating.`,
       },
       {
         capabilities: {
@@ -81,8 +86,8 @@ When working with this server, start by listing projects to discover what's avai
           }
         },
         {
-          name: 'list_context_types',
-          description: 'Discover what context files exist for a specific project. Use this after selecting a project to see what information is already stored (mental_model, session_summary, features, etc.) before reading or updating context. This shows you what context types are available so you can retrieve relevant information.',
+          name: 'list_contexts',
+          description: 'Discover what contexts exist for a specific project. Use this after selecting a project to see what information is already stored (mental_model, session_summary, features, etc.) before reading or updating context. This shows you what context types are available so you can retrieve relevant information.',
           inputSchema: {
             type: 'object',
             properties: {
@@ -150,6 +155,17 @@ When working with this server, start by listing projects to discover what's avai
             },
             required: ['project_name', 'context_type']
           }
+        },
+        {
+          name: 'get_project_templates',
+          description: 'Retrieve the project templates for a project. contexts must be formatted according to the appropriate template in order to update successfully.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              project_name: { type: 'string' }
+            },
+            required: ['project_name']
+          }
         }
       ]
     }));
@@ -160,8 +176,8 @@ When working with this server, start by listing projects to discover what's avai
       
         try {
           switch (name) {
-            case 'list_context_types':
-              return await this.listcontextTypesHandler.handle({
+            case 'list_contexts':
+              return await this.listContextsHandler.handle({
                 projectName: args.project_name as string
               });
 
@@ -195,6 +211,11 @@ When working with this server, start by listing projects to discover what's avai
                 contextType: args.context_type as string,
                 contextName: args.context_name as string
               });              
+
+            case 'get_project_templates':
+              return await this.getProjectTemplatesHandler.handle({
+                projectName: args.project_name as string
+              });          
               
             default:
               throw new Error(`Unknown tool: ${name}`);

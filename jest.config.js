@@ -29,5 +29,8 @@ export default {
   testPathIgnorePatterns: [
     '/node_modules/',
     '/dist/'
+  ],
+  transformIgnorePatterns: [
+    'node_modules/(?!(unified|remark-parse|remark-frontmatter|mdast-util-from-markdown|mdast-util-to-markdown|unist-util-stringify-position|micromark|decode-named-character-reference|character-entities|unist-util-position|unist-util-visit|unist-util-is|unist-util-visit-parents)/)'
   ]
 };

@@ -5,6 +5,7 @@ import fs from 'fs/promises';
 import { PersistenceHelper } from '../../../types.js';
 import { PersistenceResponse } from '../../../types.js';
 import { typeMap } from '../../contexTypeFactory';
+const { DateTime } = require('luxon');
 
 export class FileSystemHelper implements PersistenceHelper {
   contextRoot: string;
@@ -277,9 +278,56 @@ export class FileSystemHelper implements PersistenceHelper {
   }
 
   private timestamp(): string {
-    const now = new Date();
-    const isoString = now.toISOString();
-    return `${isoString.replace(/\.\d+Z$/, '').replace(/[:.]/g, '-')}`;
+    // Format: YYYY-MM-DDTHH-MM-ss-SSSZ (filesystem-friendly ISO 8601)
+    return DateTime.utc().toFormat('yyyy-MM-dd\'T\'HH-mm-ss-SSS\'Z\'');
+  }
+
+  async getTemplate(projectName: string, contextType: string): Promise<PersistenceResponse> {
+    try {
+      const projectPath = await this.getProjectPath(projectName);
+      const projectTemplatesDir = path.join(projectPath, 'templates');
+      const projectTemplatePath = path.join(projectTemplatesDir, `${contextType}.md`);
+      
+      // Check if project template exists
+      try {
+        const projectTemplateContent = await fs.readFile(projectTemplatePath, 'utf-8');
+        return {
+          success: true,
+          data: [projectTemplateContent]
+        };
+      } catch (projectError) {
+        // Project template doesn't exist, initialize it from repository default
+        try {
+          const repositoryRoot = path.resolve(__dirname, '../../../..');
+          const defaultTemplatePath = path.join(repositoryRoot, 'templates', `${contextType}.md`);
+          
+          // Read the repository default template
+          const defaultTemplateContent = await fs.readFile(defaultTemplatePath, 'utf-8');
+          
+          // Ensure project templates directory exists
+          await this.ensureDirectoryExists(projectTemplatesDir);
+          
+          // Copy the default template to the project
+          await fs.writeFile(projectTemplatePath, defaultTemplateContent);
+          
+          // Return the template content (now copied to project)
+          return {
+            success: true,
+            data: [defaultTemplateContent]
+          };
+        } catch (repositoryError) {
+          return {
+            success: false,
+            errors: [`Failed to load or initialize template for ${contextType}: ${repositoryError instanceof Error ? repositoryError.message : 'Unknown error'}`]
+          };
+        }
+      }
+    } catch (error) {
+      return {
+        success: false,
+        errors: [`Failed to load template for ${contextType}: ${error instanceof Error ? error.message : 'Unknown error'}`]
+      };
+    }
   }
 
   private generateTimestampedContextName(contextType: string): string {

@@ -3,11 +3,11 @@ import { ContentItem } from '../types';
 import { typeMap } from '../models/contexTypeFactory';
 import { OtherType } from '../models/context_types/other_type';
 
-interface ListcontextTypesArgs {
+interface ListContextsArgs {
   projectName: string;
 }
 
-class ListcontextTypesHandler {
+class ListContextsHandler {
   private fsHelper: FileSystemHelper;
   
   constructor(
@@ -16,7 +16,7 @@ class ListcontextTypesHandler {
     this.fsHelper = fsHelper;
   }
 
-async handle(args: ListcontextTypesArgs): Promise<{ content: ContentItem[] }> {
+async handle(args: ListContextsArgs): Promise<{ content: ContentItem[] }> {
   try {
     // Get all standard context types (excluding 'other')
     const standardTypes = Object.keys(typeMap).filter(key => key !== 'other');
@@ -54,4 +54,4 @@ async handle(args: ListcontextTypesArgs): Promise<{ content: ContentItem[] }> {
 }
 }
 
-export default ListcontextTypesHandler;
+export default ListContextsHandler;
