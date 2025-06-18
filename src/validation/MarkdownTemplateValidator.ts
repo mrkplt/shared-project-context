@@ -5,13 +5,6 @@ import { Node } from 'unist';
 import { Heading, Text, Root } from 'mdast';
 import { ValidationResponse, ValidationError, PersistenceHelper } from '../types.js';
 
-interface MarkdownNode extends Node {
-  type: string;
-  children?: MarkdownNode[];
-  depth?: number;
-  value?: string;
-}
-
 interface TemplateStructure {
   requiredHeaders: string[];
   headerHierarchy: Map<string, number>;
@@ -92,17 +85,18 @@ export class MarkdownTemplateValidator {
     
     const parentStack: Array<{ text: string; depth: number }> = [];
     
-    this.visitNode(tree, (node: MarkdownNode) => {
-      if (node.type === 'heading' && node.depth && node.children) {
-        const headerText = this.extractHeaderText(node);
+    this.visitNode(tree, (node: Node) => {
+      if (node.type === 'heading') {
+        const heading = node as Heading;
+        const headerText = this.extractHeaderText(heading);
         if (!headerText) return;
   
         headers.push(headerText);
-        headerHierarchy.set(headerText, node.depth);
+        headerHierarchy.set(headerText, heading.depth);
   
         // Pop headers at same or deeper level
         while (parentStack.length > 0 && 
-               parentStack[parentStack.length - 1].depth >= node.depth) {
+               parentStack[parentStack.length - 1].depth >= heading.depth) {
           parentStack.pop();
         }
   
@@ -119,7 +113,7 @@ export class MarkdownTemplateValidator {
           subHeaders.set(headerText, []);
         }
   
-        parentStack.push({ text: headerText, depth: node.depth });
+        parentStack.push({ text: headerText, depth: heading.depth });
       }
     });
     
@@ -201,19 +195,19 @@ export class MarkdownTemplateValidator {
     return guidance;
   }
 
-  private visitNode(node: MarkdownNode, visitor: (node: MarkdownNode) => void): void {
+  private visitNode(node: Node, visitor: (node: Node) => void): void {
     visitor(node);
-    if (node.children) {
+    if ('children' in node && Array.isArray(node.children)) {
       node.children.forEach(child => this.visitNode(child, visitor));
     }
   }
 
-  private extractHeaderText(node: MarkdownNode): string | null {
-    if (!node.children) return null;
+  private extractHeaderText(heading: Heading): string | null {
+    if (!heading.children || heading.children.length === 0) return null;
     
-    const textNodes = node.children.filter(child => child.type === 'text');
+    const textNodes = heading.children.filter((child): child is Text => child.type === 'text');
     if (textNodes.length === 0) return null;
     
-    return textNodes.map(child => child.value || '').join('').trim();
+    return textNodes.map(text => text.value).join('').trim();
   }
 }
