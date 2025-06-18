@@ -38,9 +38,13 @@ export class MarkdownTemplateValidator {
 
       const template = templateResult.data[0];
       
+      // Normalize template variables before parsing
+      const normalizedTemplate = this.normalizeTemplateVariables(template);
+      const normalizedContent = this.normalizeTemplateVariables(content);
+      
       // Parse both template and content
-      const templateStructure = this.parseMarkdownStructure(template);
-      const contentStructure = this.parseMarkdownStructure(content);
+      const templateStructure = this.parseMarkdownStructure(normalizedTemplate);
+      const contentStructure = this.parseMarkdownStructure(normalizedContent);
       
       // Validate structure
       const errors = this.validateStructure(contentStructure, templateStructure);
@@ -69,6 +73,44 @@ export class MarkdownTemplateValidator {
         correctionGuidance: ['Unable to validate content due to internal error'],
         templateUsed: ''
       };
+    }
+  }
+
+  private normalizeTemplateVariables(content: string): string {
+    // Split content into lines for line-by-line processing
+    const lines = content.split('\n');
+    const normalizedLines = lines.map(line => this.normalizeTemplateLine(line));
+    return normalizedLines.join('\n');
+  }
+  
+  private normalizeTemplateLine(line: string): string {
+    // Check if line contains template variables
+    const hasTemplateVars = /{{\s*[^}]+\s*}}/.test(line);
+    
+    if (hasTemplateVars) {
+      // Convert template line to a regex pattern that matches surrounding content
+      // Step 1: Escape special regex characters
+      let escaped = line.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      
+      // Step 2: Replace escaped template variables with .* pattern
+      let pattern = escaped.replace(/\\{\\{[^}]*\\}\\}/g, '.*');
+      
+      return `TEMPLATE_PATTERN:${pattern}`;
+    } else {
+      // No variables - return line as-is for exact matching
+      return line;
+    }
+  }
+  
+  private linesMatch(templateLine: string, contentLine: string): boolean {
+    // If template line is a pattern, use regex matching
+    if (templateLine.startsWith('TEMPLATE_PATTERN:')) {
+      const pattern = templateLine.replace('TEMPLATE_PATTERN:', '');
+      const regex = new RegExp(`^${pattern}$`);
+      return regex.test(contentLine);
+    } else {
+      // Exact match for non-template lines
+      return templateLine === contentLine;
     }
   }
 
@@ -123,9 +165,13 @@ export class MarkdownTemplateValidator {
   private validateStructure(contentStructure: TemplateStructure, templateStructure: TemplateStructure): ValidationError[] {
     const errors: ValidationError[] = [];
     
-    // Check for missing required headers
+    // Check for missing required headers using flexible matching
     for (const requiredHeader of templateStructure.requiredHeaders) {
-      if (!contentStructure.requiredHeaders.includes(requiredHeader)) {
+      const hasMatch = contentStructure.requiredHeaders.some(contentHeader => 
+        this.linesMatch(requiredHeader, contentHeader)
+      );
+      
+      if (!hasMatch) {
         errors.push({
           type: 'missing_header',
           section: requiredHeader,
@@ -134,21 +180,36 @@ export class MarkdownTemplateValidator {
       }
     }
     
-    // Check header hierarchy
-    for (const [header, expectedDepth] of templateStructure.headerHierarchy) {
-      const actualDepth = contentStructure.headerHierarchy.get(header);
-      if (actualDepth && actualDepth !== expectedDepth) {
+    // Check header hierarchy with flexible matching
+    for (const [templateHeader, expectedDepth] of templateStructure.headerHierarchy) {
+      // Find matching content header using flexible matching
+      let matchingContentHeader: string | undefined;
+      let actualDepth: number | undefined;
+      
+      for (const [contentHeader, depth] of contentStructure.headerHierarchy) {
+        if (this.linesMatch(templateHeader, contentHeader)) {
+          matchingContentHeader = contentHeader;
+          actualDepth = depth;
+          break;
+        }
+      }
+      
+      if (matchingContentHeader && actualDepth !== expectedDepth) {
         errors.push({
           type: 'incorrect_structure',
-          section: header,
-          message: `Header "${header}" should be level ${expectedDepth} but found level ${actualDepth}`
+          section: matchingContentHeader,
+          message: `Header "${matchingContentHeader}" should be level ${expectedDepth} but found level ${actualDepth}`
         });
       }
     }
     
-    // Check for unexpected headers
+    // Check for unexpected headers (only flag headers that don't match any template pattern)
     for (const foundHeader of contentStructure.requiredHeaders) {
-      if (!templateStructure.requiredHeaders.includes(foundHeader)) {
+      const hasTemplateMatch = templateStructure.requiredHeaders.some(templateHeader =>
+        this.linesMatch(templateHeader, foundHeader)
+      );
+      
+      if (!hasTemplateMatch) {
         errors.push({
           type: 'invalid_format',
           section: foundHeader,

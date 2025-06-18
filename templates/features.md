@@ -1,10 +1,10 @@
 # Features
-<!-- Last Updated: YYYY-MM-DD -->
+<!-- Last Updated: {{DATE}} -->
 
 ## Feature: [ID] [Feature Name]
 - **Status**: ✅ Active / 🚧 In Development / ⏳ Planned / ❌ Deprecated
 - **Confidence**: High/Medium/Low
-- **Last Verified**: YYYY-MM-DD
+- **Last Verified**: {{DATE}}
 - **Description**: 
   [Clear, concise description of what the feature does from user's perspective]
 

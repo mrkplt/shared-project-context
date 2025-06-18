@@ -29,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- Previous sessions below this line -->
 
-## [0.1.0] - YYYY-MM-DD
+## [{{VERSION}}] - {{DATE}}
 
 ### Added
 - Initial project setup

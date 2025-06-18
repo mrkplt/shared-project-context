@@ -1,5 +1,5 @@
 # Mental Model
-<!-- Last Updated: YYYY-MM-DD -->
+<!-- Last Updated: {{DATE}} -->
 
 ## System Overview
 <!-- Confidence: High/Medium/Low -->
@@ -7,7 +7,7 @@
 
 ## Components
 <!-- Format: Component Name (Confidence: High/Medium/Low) -->
-<!-- Last Verified: YYYY-MM-DD -->
+<!-- Last Verified: {{DATE}} -->
 - **ComponentName**
   - Purpose: [1-2 sentence purpose]
   - Location: [File/Module path]
@@ -26,7 +26,7 @@
    - Options: [Alternatives considered]
    - Chosen: [Selected approach]
    - Impact: [Effects on system]
-   - Last Validated: YYYY-MM-DD
+   - Last Validated: {{DATE}}
 
 ## Context Links
 - Related Files: [file1, file2]
