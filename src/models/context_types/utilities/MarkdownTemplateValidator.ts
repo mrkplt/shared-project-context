@@ -3,7 +3,7 @@ import remarkParse from 'remark-parse';
 import remarkFrontmatter from 'remark-frontmatter';
 import { Node } from 'unist';
 import { Heading, Text, Root } from 'mdast';
-import { ValidationResponse, ValidationError, PersistenceHelper } from '../types.js';
+import { ValidationResponse, ValidationError, PersistenceHelper } from '../../../types.js';
 
 interface TemplateStructure {
   requiredHeaders: string[];
