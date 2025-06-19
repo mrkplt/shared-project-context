@@ -2,13 +2,13 @@ import { Dirent } from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import fs from 'fs/promises';
-import { PersistenceHelper, ProjectConfig, BaseTypeConfig } from '../../../types.js';
+import { PersistenceHelper, ProjectConfig, TypeConfig } from '../../../types.js';
 import { PersistenceResponse } from '../../../types.js';
-import { typeMap } from '../../contexTypeFactory';
 const { DateTime } = require('luxon');
 
 export class FileSystemHelper implements PersistenceHelper {
   contextRoot: string;
+  private configCache: Map<string, ProjectConfig> = new Map();
   
   constructor(
     contextRoot: string = path.join(os.homedir(), '.shared-project-context')
@@ -45,20 +45,12 @@ export class FileSystemHelper implements PersistenceHelper {
       return {success: false, errors: [`Project '${projectName}' does not exist. Create it first using create_project.`]};
     }
 
-    // typeMap needs to be defined and exported from this class since it's 
-    // now a function of the persistence layer reading in templates - in this case
-    // from a directory location.
-    //
-    // type map should be populated from the configurations for the project 
-    // when it is read in.
-    // Theother functions actually only ever use the keys for typeMap here and in
-    // the getProjectTemplatesHandler so maybe just exposing the configed template 
-    // name would be enough.
-    // 
-
     try {
-      const entries = await Promise.all(Object.keys(typeMap).map(async key => {
-        const contextTypePath = path.join(projectPath, key);
+      const config = await this.getProjectConfig(projectName);
+      const contextTypeNames = config.contextTypes.map(ct => ct.name);
+      
+      const entries = await Promise.all(contextTypeNames.map(async typeName => {
+        const contextTypePath = path.join(projectPath, typeName);
         await this.ensureDirectoryExists(contextTypePath);
         return await this.readDirectory(contextTypePath, { withFileTypes: true, recursive: true }) as Dirent[];
       }))
@@ -79,6 +71,13 @@ export class FileSystemHelper implements PersistenceHelper {
     await this.ensureDirectoryExists(path.join(projectPath, contextType));
 
     try {
+      const config = await this.getProjectConfig(projectName);
+      const contextTypeConfig = config.contextTypes.find(ct => ct.name === contextType);
+      
+      if (!contextTypeConfig) {
+        return { success: false, errors: [`Context type '${contextType}' not found in project configuration`] };
+      }
+
       const filePathPromises = contextNames.map(name => 
         this.getContextFilePath(projectName, contextType, name)
       );
@@ -92,16 +91,16 @@ export class FileSystemHelper implements PersistenceHelper {
         } catch (error) {
           if (
             error instanceof Error 
-            && (error as NodeJS.ErrnoException).code === 'ENOENT' 
-            && ['session_summary', 'features', 'mental_model'].includes(contextType) //TODO update this to match the metatypes
+            && (error as NodeJS.ErrnoException).code === 'ENOENT'
           ) {
-            return { content: '', error: null, name: contextNames[index] };
-          } else if (
-            error instanceof Error 
-            && (error as NodeJS.ErrnoException).code === 'ENOENT' 
-            && ['other'].includes(contextType) 
-          ) {
-            return { content: null, error: 'Context not found. Have you created it using create_context yet?', name: contextNames[index] };
+            // Use configuration to determine missing file behavior
+            const shouldReturnEmpty = this.shouldReturnEmptyForMissingFile(contextTypeConfig);
+            
+            if (shouldReturnEmpty) {
+              return { content: '', error: null, name: contextNames[index] };
+            } else {
+              return { content: null, error: 'Context not found. Have you created it using create_context yet?', name: contextNames[index] };
+            }
           }
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
           return { content: null, error: errorMessage, name: contextNames[index] };
@@ -143,7 +142,14 @@ export class FileSystemHelper implements PersistenceHelper {
     await this.ensureDirectoryExists(path.join(projectPath, contextType));
     
     try {
-      const fileName = contextType === 'session_summary'  //TODO update this to match the metatypes
+      const config = await this.getProjectConfig(projectName);
+      const contextTypeConfig = config.contextTypes.find(ct => ct.name === contextType);
+      
+      if (!contextTypeConfig) {
+        return { success: false, errors: [`Context type '${contextType}' not found in project configuration`] };
+      }
+
+      const fileName = contextTypeConfig.fileNaming === 'timestamped'
         ? this.generateTimestampedContextName(contextName) 
         : contextName;
      
@@ -158,12 +164,19 @@ export class FileSystemHelper implements PersistenceHelper {
     }
   }
 
-  //TODO: Add caching here to the template retrieval
   async getTemplate(projectName: string, contextType: string): Promise<PersistenceResponse> {
     try {
+      const config = await this.getProjectConfig(projectName);
+      const contextTypeConfig = config.contextTypes.find(ct => ct.name === contextType);
+      
+      if (!contextTypeConfig) {
+        return { success: false, errors: [`Context type '${contextType}' not found in project configuration`] };
+      }
+
       const projectPath = await this.getProjectPath(projectName);
       const projectTemplatesDir = path.join(projectPath, 'templates');
-      const projectTemplatePath = path.join(projectTemplatesDir, `${contextType}.md`);
+      const templateName = contextTypeConfig.template || contextType;
+      const projectTemplatePath = path.join(projectTemplatesDir, `${templateName}.md`);
       
       // Check if project template exists
       try {
@@ -176,7 +189,7 @@ export class FileSystemHelper implements PersistenceHelper {
         // Project template doesn't exist, initialize it from repository default
         try {
           const repositoryRoot = path.resolve(__dirname, '../../../..');
-          const defaultTemplatePath = path.join(repositoryRoot, 'templates', `${contextType}.md`);
+          const defaultTemplatePath = path.join(repositoryRoot, 'templates', `${templateName}.md`);
           
           // Read the repository default template
           const defaultTemplateContent = await fs.readFile(defaultTemplatePath, 'utf-8');
@@ -312,20 +325,24 @@ export class FileSystemHelper implements PersistenceHelper {
   }
 
   private async getContextFilePath(projectName: string, contextType: string, contextName?: string): Promise<string> {
-    const projectPath = await this.getProjectPath(projectName)
+    const projectPath = await this.getProjectPath(projectName);
+    const config = await this.getProjectConfig(projectName);
+    const contextTypeConfig = config.contextTypes.find(ct => ct.name === contextType);
+    
+    if (!contextTypeConfig) {
+      throw new Error(`Context type '${contextType}' not found in project configuration`);
+    }
+    
     await this.ensureDirectoryExists(path.join(projectPath, contextType));
-      // TODO update to do this dynamically based on the type names in config 
-    switch (contextType) {
-      case 'session_summary':
+    
+    switch (contextTypeConfig.fileNaming) {
+      case 'timestamped':
+      case 'named':
         return path.join(projectPath, contextType, `${contextName}.md`);
-      case 'other':
-        return path.join(projectPath, contextType, `${contextName}.md`);
-      case 'mental_model':
-        return path.join(projectPath, contextType, `${contextType}.md`);
-      case 'features':
+      case 'single':
         return path.join(projectPath, contextType, `${contextType}.md`);
       default:
-        throw new Error('Invalid file type');
+        throw new Error(`Invalid fileNaming type: ${contextTypeConfig.fileNaming}`);
     }
   }
 
@@ -345,23 +362,36 @@ export class FileSystemHelper implements PersistenceHelper {
     return `${contextType}-${this.timestamp()}`;
   }
 
-  async getProjectConfig(projectName: string): Promise<ProjectConfig> {
+  private async getProjectConfig(projectName: string): Promise<ProjectConfig> {
+    // Check cache first
+    if (this.configCache.has(projectName)) {
+      return this.configCache.get(projectName)!;
+    }
+
     const projectPath = await this.getProjectPath(projectName);
     const configPath = path.join(projectPath, 'context-config.json');
     
+    let config: ProjectConfig;
+    
     try {
       const configContent = await fs.readFile(configPath, 'utf-8');
-      return JSON.parse(configContent);
+      config = JSON.parse(configContent);
     } catch (error) {
       // Return default configuration if config file doesn't exist
-      return this.getDefaultConfig();
+      config = this.getDefaultConfig();
     }
+    
+    // Cache the configuration
+    this.configCache.set(projectName, config);
+    return config;
   }
 
-
-  // TODO I'm not in love with this. I think I would almost rather have 
-  // this fail if these aren't here. I also think this maybe should all 
-  // move back to configs per one of my todos
+  // Helper method to determine missing file behavior based on config
+  private shouldReturnEmptyForMissingFile(contextTypeConfig: TypeConfig): boolean {
+    // Templated types (both log and document) should return empty for missing files
+    // Freeform types should return error for missing files
+    return contextTypeConfig.baseType === 'templated-log' || contextTypeConfig.baseType === 'templated-document';
+  }
 
   private getDefaultConfig(): ProjectConfig {
     return {
@@ -371,7 +401,7 @@ export class FileSystemHelper implements PersistenceHelper {
           name: 'session_summary',
           description: 'Append-only log of development sessions. Each entry is timestamped and follows the session_summary template. Use get_context("session_summary") to read all entries chronologically, and update_context("session_summary", content) to append a new entry.',
           template: 'session_summary',
-          fileNaming: 'timestamped', // TODO update the persistence above to use this.
+          fileNaming: 'timestamped',
           validation: true
         },
         {

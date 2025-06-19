@@ -60,11 +60,10 @@ export interface PersistenceHelper {
    getContext(projectName: string, contextType: string, contextName: string[]): Promise<PersistenceResponse>;
    archiveContext(projectName: string, contextType: string, contextName: string[]): Promise<PersistenceResponse>;
    getTemplate(projectName: string, contextType: string): Promise<PersistenceResponse>;
-   getProjectConfig(projectName: string): Promise<ProjectConfig>;
 }
 
 // Configuration system types
-export interface BaseTypeConfig {
+export interface TypeConfig {
   baseType: 'templated-document' | 'freeform-document' | 'templated-log' | 'log';
   name: string;
   description: string;
@@ -74,5 +73,5 @@ export interface BaseTypeConfig {
 }
 
 export interface ProjectConfig {
-  contextTypes: BaseTypeConfig[];
+  contextTypes: TypeConfig[];
 }
