@@ -50,6 +50,7 @@ export default async function contextTypeFactory(args: ContextTypeFactoryArgs): 
 }
 
 // Keep the old typeMap for backward compatibility in FileSystemHelper
+// TODO: remove this
 export const typeMap = {
     session_summary: 'session_summary',
     mental_model: 'mental_model',

@@ -38,7 +38,7 @@ class ContextManagerServer {
     this.resetContextHandler = new ResetContextHandler(this.fsHelper);
     this.getProjectTemplatesHandler = new GetProjectTemplatesHandler(this.fsHelper);
     
-    // Initialize MCP server with proper configuration
+    // TODO: indicate that further instruction about how to use the contexts is available somehwere and make it dynamic
     this.server = new Server(
       {
         name: 'shared-project-context',
@@ -116,7 +116,7 @@ Call the project_templates tool before updating context to retrieve the required
               project_name: { type: 'string' },
               context_type: { 
                 type: 'string', 
-                enum: ['mental_model', 'session_summary', 'other', 'features'] 
+                enum: ['mental_model', 'session_summary', 'other', 'features'] // TODO: enum template names
               },
               context_name: { type: 'string' }
             },
@@ -132,7 +132,7 @@ Call the project_templates tool before updating context to retrieve the required
               project_name: { type: 'string' },
               context_type: { 
                 type: 'string', 
-                enum: ['mental_model', 'session_summary', 'other', 'features'] 
+                enum: ['mental_model', 'session_summary', 'other', 'features'] // TODO: enum template names
               },
               context_name: { type: 'string' },
               content: { type: 'string' }
@@ -149,7 +149,7 @@ Call the project_templates tool before updating context to retrieve the required
               project_name: { type: 'string' },
               context_type: { 
                 type: 'string', 
-                enum: ['mental_model', 'session_summary', 'other', 'features'] 
+                enum: ['mental_model', 'session_summary', 'other', 'features'] // TODO: enum template names
               },
               context_name: { type: 'string' }
             },

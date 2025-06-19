@@ -45,6 +45,18 @@ export class FileSystemHelper implements PersistenceHelper {
       return {success: false, errors: [`Project '${projectName}' does not exist. Create it first using create_project.`]};
     }
 
+    // typeMap needs to be defined and exported from this class since it's 
+    // now a function of the persistence layer reading in templates - in this case
+    // from a directory location.
+    //
+    // type map should be populated from the configurations for the project 
+    // when it is read in.
+    // Theother functions actually only ever use the keys for typeMap here and in
+    // the getProjectTemplatesHandler so maybe just exposing the configed template 
+    // name would be enough.
+    // 
+
+
     try {
       const entries = await Promise.all(Object.keys(typeMap).map(async key => {
         const contextTypePath = path.join(projectPath, key);
@@ -82,7 +94,7 @@ export class FileSystemHelper implements PersistenceHelper {
           if (
             error instanceof Error 
             && (error as NodeJS.ErrnoException).code === 'ENOENT' 
-            && ['session_summary', 'features', 'mental_model'].includes(contextType)
+            && ['session_summary', 'features', 'mental_model'].includes(contextType) //TODO update this to match the metatypes
           ) {
             return { content: '', error: null, name: contextNames[index] };
           } else if (
@@ -132,7 +144,7 @@ export class FileSystemHelper implements PersistenceHelper {
     await this.ensureDirectoryExists(path.join(projectPath, contextType));
     
     try {
-      const fileName = contextType === 'session_summary' 
+      const fileName = contextType === 'session_summary'  //TODO update this to match the metatypes
         ? this.generateTimestampedContextName(contextName) 
         : contextName;
      
@@ -255,7 +267,7 @@ export class FileSystemHelper implements PersistenceHelper {
   private async getContextFilePath(projectName: string, contextType: string, contextName?: string): Promise<string> {
     const projectPath = await this.getProjectPath(projectName)
     await this.ensureDirectoryExists(path.join(projectPath, contextType));
-
+      // TODO update to do this dynamically based on the type names in config 
     switch (contextType) {
       case 'session_summary':
         return path.join(projectPath, contextType, `${contextName}.md`);
@@ -347,6 +359,12 @@ export class FileSystemHelper implements PersistenceHelper {
     }
   }
 
+
+  // TODO I'm not in love with this. I think I would almost rather have 
+  // this fail if these aren't here. I also think this maybe should all 
+  // move back to configs per one of my todos
+
+  //TODO: add untemplated log below
   private getDefaultConfig(): ProjectConfig {
     return {
       contextTypes: [
@@ -355,7 +373,7 @@ export class FileSystemHelper implements PersistenceHelper {
           name: 'session_summary',
           description: 'Append-only log of development sessions. Each entry is timestamped and follows the session_summary template. Use get_context("session_summary") to read all entries chronologically, and update_context("session_summary", content) to append a new entry.',
           template: 'session_summary',
-          fileNaming: 'timestamped',
+          fileNaming: 'timestamped', // TODO update the persistence above to use this.
           validation: true
         },
         {
