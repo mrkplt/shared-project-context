@@ -1,7 +1,7 @@
-import { TemplatedDocument } from './context_types/TemplatedDocument.js';
-import { FreeformDocument } from './context_types/FreeformDocument.js';
-import { TemplatedLog } from './context_types/TemplatedLog.js';
-import { Log } from './context_types/Log.js';
+import { TemplatedDocument } from './context_types/base/TemplatedDocument.js';
+import { FreeformDocument } from './context_types/base/FreeformDocument.js';
+import { TemplatedLog } from './context_types/base/TemplatedLog.js';
+import { Log } from './context_types/base/Log.js';
 import { FileSystemHelper } from './context_types/utilities/fileSystem.js';
 import { ContextType, ContextTypeArgs, BaseTypeConfig } from '../types.js';
 
