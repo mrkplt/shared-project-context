@@ -28,7 +28,7 @@ class GetProjectTemplatesHandler {
       const contextTypes = response
         .config
         .contextTypes
-        .filter(type => type.baseType !== 'freeform-document')
+        .filter(type => type.template)
         .map(ct => ct.name);
 
       const templates: Record<string, string> = {};
