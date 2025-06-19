@@ -16,11 +16,6 @@ class GetProjectTemplatesHandler {
 
   async handle(args: GetProjectTemplatesArgs): Promise<{ content: ContentItem[] }> {
     try {
-      // Get all context types excluding 'other' since it will never exist
-      // This needs to be updated to be aware of the configuration and the 
-      // the new meta types. It hsould be updated to be anything that is 
-      // untemplated and not 'other'
-
       const response = await this.fsHelper.getProjectConfig(args.projectName);
       if (!response.success || !response.config) {
         return { content: [{ type: 'text', text: `Failed to load project configuration.` }] };

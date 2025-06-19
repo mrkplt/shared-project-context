@@ -114,10 +114,7 @@ Call the project_templates tool before updating context to retrieve the required
             type: 'object',
             properties: {
               project_name: { type: 'string' },
-              context_type: { 
-                type: 'string', 
-                enum: ['mental_model', 'session_summary', 'other', 'features'] // TODO: enum template names
-              },
+              context_type: { type: 'string' },
               context_name: { type: 'string' }
             },
             required: ['project_name', 'context_type']
@@ -130,10 +127,7 @@ Call the project_templates tool before updating context to retrieve the required
             type: 'object',
             properties: {
               project_name: { type: 'string' },
-              context_type: { 
-                type: 'string', 
-                enum: ['mental_model', 'session_summary', 'other', 'features'] // TODO: enum template names
-              },
+              context_type: { type: 'string' },
               context_name: { type: 'string' },
               content: { type: 'string' }
             },
@@ -147,10 +141,7 @@ Call the project_templates tool before updating context to retrieve the required
             type: 'object',
             properties: {
               project_name: { type: 'string' },
-              context_type: { 
-                type: 'string', 
-                enum: ['mental_model', 'session_summary', 'other', 'features'] // TODO: enum template names
-              },
+              context_type: { type: 'string' },
               context_name: { type: 'string' }
             },
             required: ['project_name', 'context_type']
