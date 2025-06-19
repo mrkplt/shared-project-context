@@ -1,7 +1,7 @@
 # Features
 <!-- Last Updated: {{DATE}} -->
 
-## Feature: [ID] [Feature Name]
+## Feature: {{FEATURE_NAME}}
 - **Status**: ✅ Active / 🚧 In Development / ⏳ Planned / ❌ Deprecated
 - **Confidence**: High/Medium/Low
 - **Last Verified**: {{DATE}}
