@@ -1,5 +1,5 @@
 import { FileSystemHelper } from '../models/context_types/utilities/fileSystem';
-import { ContentItem, BaseTypeConfig } from '../types';
+import { ContentItem, TypeConfig } from '../types';
 
 interface ListContextsArgs {
   projectName: string;
@@ -17,7 +17,11 @@ class ListContextsHandler {
   async handle(args: ListContextsArgs): Promise<{ content: ContentItem[] }> {
     try {
       // Get project configuration
-      const config = await this.fsHelper.getProjectConfig(args.projectName);
+      const response = await this.fsHelper.getProjectConfig(args.projectName);
+      if (!response.success || !response.config) {
+        return { content: [{ type: 'text', text: `Failed to load project configuration.` }] };
+      }
+      const config = response.config;
       
       // Get existing files for each context type
       const allFiles = await this.fsHelper.listAllContextForProject(args.projectName);
@@ -51,7 +55,7 @@ class ListContextsHandler {
   }
 
   // TODO move back to file system with aget contexts for type method
-  private getFilesForContextType(typeConfig: BaseTypeConfig, allFiles: string[]): string[] {
+  private getFilesForContextType(typeConfig: TypeConfig, allFiles: string[]): string[] {
     if (typeConfig.name === 'other') {
       // Return all files that aren't core types
       return allFiles.filter(f => !['session_summary', 'mental_model', 'features'].some(ct => f.startsWith(ct)));

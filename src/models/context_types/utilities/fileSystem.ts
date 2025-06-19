@@ -46,7 +46,11 @@ export class FileSystemHelper implements PersistenceHelper {
     }
 
     try {
-      const config = await this.getProjectConfig(projectName);
+      const response = await this.getProjectConfig(projectName);
+      if (!response.success || !response.config) {
+        return { success: false, errors: [`Failed to load project configuration.`] };
+      }
+      const config = response.config;
       const contextTypeNames = config.contextTypes.map(ct => ct.name);
       
       const entries = await Promise.all(contextTypeNames.map(async typeName => {
@@ -71,7 +75,11 @@ export class FileSystemHelper implements PersistenceHelper {
     await this.ensureDirectoryExists(path.join(projectPath, contextType));
 
     try {
-      const config = await this.getProjectConfig(projectName);
+      const response = await this.getProjectConfig(projectName);
+      if (!response.success || !response.config) {
+        return { success: false, errors: [`Failed to load project configuration.`] };
+      }
+      const config = response.config;
       const contextTypeConfig = config.contextTypes.find(ct => ct.name === contextType);
       
       if (!contextTypeConfig) {
@@ -142,7 +150,11 @@ export class FileSystemHelper implements PersistenceHelper {
     await this.ensureDirectoryExists(path.join(projectPath, contextType));
     
     try {
-      const config = await this.getProjectConfig(projectName);
+      const response = await this.getProjectConfig(projectName);
+      if (!response.success || !response.config) {
+        return { success: false, errors: [`Failed to load project configuration.`] };
+      }
+      const config = response.config;
       const contextTypeConfig = config.contextTypes.find(ct => ct.name === contextType);
       
       if (!contextTypeConfig) {
@@ -166,7 +178,12 @@ export class FileSystemHelper implements PersistenceHelper {
 
   async getTemplate(projectName: string, contextType: string): Promise<PersistenceResponse> {
     try {
-      const config = await this.getProjectConfig(projectName);
+      const response = await this.getProjectConfig(projectName);
+      if (!response.success || !response.config) {
+        return { success: false, errors: [`Failed to load project configuration.`] };
+      }
+
+      const config = response.config;
       const contextTypeConfig = config.contextTypes.find(ct => ct.name === contextType);
       
       if (!contextTypeConfig) {
@@ -326,7 +343,11 @@ export class FileSystemHelper implements PersistenceHelper {
 
   private async getContextFilePath(projectName: string, contextType: string, contextName?: string): Promise<string> {
     const projectPath = await this.getProjectPath(projectName);
-    const config = await this.getProjectConfig(projectName);
+    const response = await this.getProjectConfig(projectName);
+    if (!response.success || !response.config) {
+      throw new Error(`Failed to load project configuration.`);
+    }
+    const config = response.config;
     const contextTypeConfig = config.contextTypes.find(ct => ct.name === contextType);
     
     if (!contextTypeConfig) {
@@ -362,10 +383,10 @@ export class FileSystemHelper implements PersistenceHelper {
     return `${contextType}-${this.timestamp()}`;
   }
 
-  private async getProjectConfig(projectName: string): Promise<ProjectConfig> {
+  async getProjectConfig(projectName: string): Promise<PersistenceResponse> {
     // Check cache first
     if (this.configCache.has(projectName)) {
-      return this.configCache.get(projectName)!;
+      return { success: true, config: this.configCache.get(projectName) };
     }
 
     const projectPath = await this.getProjectPath(projectName);
@@ -383,7 +404,7 @@ export class FileSystemHelper implements PersistenceHelper {
     
     // Cache the configuration
     this.configCache.set(projectName, config);
-    return config;
+    return { success: true, config: config };
   }
 
   // Helper method to determine missing file behavior based on config

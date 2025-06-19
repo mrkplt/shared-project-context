@@ -50,6 +50,7 @@ export interface PersistenceResponse {
    success: boolean;
    data?: string[];
    errors?: string[];
+   config?: ProjectConfig;
 }
 
 export interface PersistenceHelper {
@@ -60,6 +61,7 @@ export interface PersistenceHelper {
    getContext(projectName: string, contextType: string, contextName: string[]): Promise<PersistenceResponse>;
    archiveContext(projectName: string, contextType: string, contextName: string[]): Promise<PersistenceResponse>;
    getTemplate(projectName: string, contextType: string): Promise<PersistenceResponse>;
+   getProjectConfig(projectName: string): Promise<PersistenceResponse>;
 }
 
 // Configuration system types
