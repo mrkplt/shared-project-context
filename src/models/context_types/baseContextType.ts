@@ -1,6 +1,6 @@
-import { ContextType, ContextTypeArgs, ContexTypeResponse, ValidationResponse, BaseTypeConfig } from '../../../types.js';
-import { FileSystemHelper } from '../utilities/fileSystem.js';
-import { MarkdownTemplateValidator } from '../utilities/MarkdownTemplateValidator.js';
+import { ContextType, ContextTypeArgs, ContexTypeResponse, ValidationResponse, BaseTypeConfig } from '../../types.js';
+import { FileSystemHelper } from './utilities/fileSystem.js';
+import { MarkdownTemplateValidator } from './utilities/MarkdownTemplateValidator.js';
 
 export abstract class BaseContextType implements ContextType {
   public readonly persistenceHelper: FileSystemHelper;

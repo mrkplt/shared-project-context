@@ -1,5 +1,5 @@
-import { ContexTypeResponse } from '../../../types.js';
-import { BaseContextType } from './BaseContextType.js';
+import { ContexTypeResponse } from '../../types.js';
+import { BaseContextType } from './baseContextType';
 
 export class TemplatedDocument extends BaseContextType {
   async update(): Promise<ContexTypeResponse> {

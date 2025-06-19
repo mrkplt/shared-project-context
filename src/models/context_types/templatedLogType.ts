@@ -1,7 +1,7 @@
-import { ContexTypeResponse } from '../../../types.js';
-import { BaseContextType } from './BaseContextType.js';
+import { ContexTypeResponse } from '../../types.js';
+import { BaseContextType } from './baseContextType.js';
 
-export class Log extends BaseContextType {
+export class TemplatedLog extends BaseContextType {
   async update(): Promise<ContexTypeResponse> {
     if (!this.content) {
       return {
@@ -10,7 +10,7 @@ export class Log extends BaseContextType {
       };
     }
 
-    // For logs, append without template validation
+    // For templated logs, append with timestamp (no reset)
     const result = await this.persistenceHelper.writeContext(
       this.projectName,
       this.config.name,

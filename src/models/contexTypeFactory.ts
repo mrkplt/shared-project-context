@@ -1,7 +1,7 @@
-import { TemplatedDocument } from './context_types/base/TemplatedDocument.js';
-import { FreeformDocument } from './context_types/base/FreeformDocument.js';
-import { TemplatedLog } from './context_types/base/TemplatedLog.js';
-import { Log } from './context_types/base/Log.js';
+import { TemplatedDocument } from './context_types/templatedDocumentType.js';
+import { FreeformDocument } from './context_types/freeformDocumentType.js';
+import { TemplatedLog } from './context_types/templatedLogType.js';
+import { Log } from './context_types/freeformLogType.js';
 import { FileSystemHelper } from './context_types/utilities/fileSystem.js';
 import { ContextType, ContextTypeArgs, BaseTypeConfig } from '../types.js';
 
@@ -16,10 +16,10 @@ interface ContextTypeFactoryArgs {
 type BaseContextTypeConstructor = new (args: ContextTypeArgs, config: BaseTypeConfig) => ContextType;
 
 const baseTypeMap = new Map<string, BaseContextTypeConstructor>([
-    ['templated-document', TemplatedDocument],
-    ['freeform-document', FreeformDocument],
-    ['templated-log', TemplatedLog],
-    ['log', Log]
+    ['templated-document', TemplatedDocument as unknown as BaseContextTypeConstructor],
+    ['freeform-document', FreeformDocument as unknown as BaseContextTypeConstructor],
+    ['templated-log', TemplatedLog as unknown as BaseContextTypeConstructor],
+    ['log', Log as unknown as BaseContextTypeConstructor]
 ]);
 
 export default async function contextTypeFactory(args: ContextTypeFactoryArgs): Promise<ContextType> {
