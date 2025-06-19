@@ -18,7 +18,7 @@ class ResetContextHandler {
   }
 
   async handle(args: ResetContextArgs): Promise<{ content: ContentItem[] }> {
-    const contextType = ContextTypeFactory({
+    const contextType = await ContextTypeFactory({
       persistenceHelper: this.fsHelper,
       projectName: args.projectName,
       contextType: args.contextType,

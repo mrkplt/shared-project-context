@@ -46,19 +46,6 @@
       persistenceHelper: FileSystemHelper;
    }
 
-//    {validationErrors: [{
-// },
-// correction_guidance: {
-// primary_issue: 'Missing filename parameter',
-// step_by_step_fix: [
-//   '1. Provide a descriptive filename for your content',
-//   '2. Use format: update_context("other", content, "your-filename")',
-//   '3. Avoid spaces and special characters in filename'
-// ],
-// template_reference: 'Other type files require explicit naming',
-// retry_instructions: 'Call update_context("other", content, name) with a valid filename'
-// }
-
 export interface PersistenceResponse {
    success: boolean;
    data?: string[];
@@ -73,4 +60,19 @@ export interface PersistenceHelper {
    getContext(projectName: string, contextType: string, contextName: string[]): Promise<PersistenceResponse>;
    archiveContext(projectName: string, contextType: string, contextName: string[]): Promise<PersistenceResponse>;
    getTemplate(projectName: string, contextType: string): Promise<PersistenceResponse>;
+   getProjectConfig(projectName: string): Promise<ProjectConfig>;
+}
+
+// Configuration system types
+export interface BaseTypeConfig {
+  baseType: 'templated-document' | 'freeform-document' | 'templated-log' | 'log';
+  name: string;
+  description: string;
+  template?: string;
+  fileNaming?: 'single' | 'timestamped' | 'named';
+  validation?: boolean;
+}
+
+export interface ProjectConfig {
+  contextTypes: BaseTypeConfig[];
 }

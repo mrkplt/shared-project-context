@@ -1,9 +1,9 @@
-import { SessionSummaryType } from './context_types/session_summary_type';
-import { MentalModelType } from './context_types/mental_model_type';
-import { FeaturesType } from './context_types/features_type';
-import { OtherType } from './context_types/other_type';
-import { FileSystemHelper } from './context_types/utilities/fileSystem';
-import { ContextType } from '../types.js';
+import { TemplatedDocument } from './context_types/TemplatedDocument.js';
+import { FreeformDocument } from './context_types/FreeformDocument.js';
+import { TemplatedLog } from './context_types/TemplatedLog.js';
+import { Log } from './context_types/Log.js';
+import { FileSystemHelper } from './context_types/utilities/fileSystem.js';
+import { ContextType, ContextTypeArgs, BaseTypeConfig } from '../types.js';
 
 interface ContextTypeFactoryArgs {
     persistenceHelper: FileSystemHelper;
@@ -13,25 +13,46 @@ interface ContextTypeFactoryArgs {
     content?: string;
 }
 
-export const typeMap = {
-    session_summary: SessionSummaryType,
-    mental_model: MentalModelType,
-    features: FeaturesType,
-    other: OtherType
-} as const;
+type BaseContextTypeConstructor = new (args: ContextTypeArgs, config: BaseTypeConfig) => ContextType;
 
-export default function contextTypeFactory(args: ContextTypeFactoryArgs): ContextType {
+const baseTypeMap = new Map<string, BaseContextTypeConstructor>([
+    ['templated-document', TemplatedDocument],
+    ['freeform-document', FreeformDocument],
+    ['templated-log', TemplatedLog],
+    ['log', Log]
+]);
+
+export default async function contextTypeFactory(args: ContextTypeFactoryArgs): Promise<ContextType> {
     const { persistenceHelper, projectName, contextType, contextName, content } = args;
-    const TypeClass = typeMap[contextType as keyof typeof typeMap];
     
-    if (!TypeClass) {
+    // Load project configuration
+    const config = await persistenceHelper.getProjectConfig(projectName);
+    
+    // Find the context type configuration
+    const typeConfig = config.contextTypes.find(ct => ct.name === contextType);
+    
+    if (!typeConfig) {
         throw new Error(`Unknown context type: ${contextType}`);
     }
-
-    return new TypeClass({
-        persistenceHelper,
-        projectName,
-        contextName,
-        content
-    });
+    
+    // Get the base type class
+    const BaseClass = baseTypeMap.get(typeConfig.baseType);
+    
+    if (!BaseClass) {
+        throw new Error(`Unknown base type: ${typeConfig.baseType}`);
+    }
+    
+    // Create instance with configuration
+    return new BaseClass(
+        { persistenceHelper, projectName, contextName, content },
+        typeConfig
+    );
 }
+
+// Keep the old typeMap for backward compatibility in FileSystemHelper
+export const typeMap = {
+    session_summary: 'session_summary',
+    mental_model: 'mental_model',
+    features: 'features',
+    other: 'other'
+} as const;

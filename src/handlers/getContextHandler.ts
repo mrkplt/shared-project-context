@@ -18,7 +18,7 @@ class GetContextHandler {
   }
 
   async handle(args: GetContextArgs): Promise<{ content: ContentItem[] }> {
-    const contextType = ContextTypeFactory({
+    const contextType = await ContextTypeFactory({
       projectName: args.projectName,
       persistenceHelper: this.fsHelper,
       contextType: args.contextType,
