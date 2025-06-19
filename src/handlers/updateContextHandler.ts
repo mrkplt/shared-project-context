@@ -41,6 +41,7 @@ class UpdateContextHandler {
       ];
       
       // Only include template information for core types that support template validation
+      // TODO: move back to file system with aget contexts for type method
       if (['session_summary', 'mental_model', 'features'].includes(args.contextType) && validationResult.templateUsed) {
         errorMessages.push(
           '',

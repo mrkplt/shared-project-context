@@ -1,7 +1,7 @@
-import { TemplatedDocument } from './context_types/templatedDocumentType.js';
-import { FreeformDocument } from './context_types/freeformDocumentType.js';
-import { TemplatedLog } from './context_types/templatedLogType.js';
-import { Log } from './context_types/freeformLogType.js';
+import { TemplatedDocumentType } from './context_types/templatedDocumentType.js';
+import { FreeformDocumentType } from './context_types/freeformDocumentType.js';
+import { TemplatedLogType } from './context_types/templatedLogType.js';
+import { LogType } from './context_types/freeformLogType.js';
 import { FileSystemHelper } from './context_types/utilities/fileSystem.js';
 import { ContextType, ContextTypeArgs, BaseTypeConfig } from '../types.js';
 
@@ -16,10 +16,10 @@ interface ContextTypeFactoryArgs {
 type BaseContextTypeConstructor = new (args: ContextTypeArgs, config: BaseTypeConfig) => ContextType;
 
 const baseTypeMap = new Map<string, BaseContextTypeConstructor>([
-    ['templated-document', TemplatedDocument as unknown as BaseContextTypeConstructor],
-    ['freeform-document', FreeformDocument as unknown as BaseContextTypeConstructor],
-    ['templated-log', TemplatedLog as unknown as BaseContextTypeConstructor],
-    ['log', Log as unknown as BaseContextTypeConstructor]
+    ['templated-document', TemplatedDocumentType as BaseContextTypeConstructor],
+    ['freeform-document', FreeformDocumentType  as BaseContextTypeConstructor],
+    ['templated-log', TemplatedLogType  as BaseContextTypeConstructor],
+    ['log', LogType  as BaseContextTypeConstructor]
 ]);
 
 export default async function contextTypeFactory(args: ContextTypeFactoryArgs): Promise<ContextType> {
@@ -50,6 +50,7 @@ export default async function contextTypeFactory(args: ContextTypeFactoryArgs): 
 }
 
 // Keep the old typeMap for backward compatibility in FileSystemHelper
+// TODO: remove this
 export const typeMap = {
     session_summary: 'session_summary',
     mental_model: 'mental_model',

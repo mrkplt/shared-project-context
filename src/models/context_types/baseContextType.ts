@@ -1,4 +1,4 @@
-import { ContextType, ContextTypeArgs, ContexTypeResponse, ValidationResponse, BaseTypeConfig } from '../../types.js';
+import { ContextType, ContextTypeArgs, ContexTypeResponse, ValidationResponse, TypeConfig } from '../../types.js';
 import { FileSystemHelper } from './utilities/fileSystem.js';
 import { MarkdownTemplateValidator } from './utilities/MarkdownTemplateValidator.js';
 
@@ -7,10 +7,10 @@ export abstract class BaseContextType implements ContextType {
   protected readonly projectName: string;
   protected readonly contextName?: string;
   protected readonly content?: string;
-  protected readonly config: BaseTypeConfig;
+  protected readonly config: TypeConfig;
   protected validator?: MarkdownTemplateValidator;
 
-  constructor(args: ContextTypeArgs, config: BaseTypeConfig) {
+  constructor(args: ContextTypeArgs, config: TypeConfig) {
     this.persistenceHelper = args.persistenceHelper;
     this.projectName = args.projectName;
     this.contextName = args.contextName;

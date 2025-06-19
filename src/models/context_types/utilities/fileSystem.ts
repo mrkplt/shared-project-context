@@ -2,13 +2,13 @@ import { Dirent } from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import fs from 'fs/promises';
-import { PersistenceHelper, ProjectConfig, BaseTypeConfig } from '../../../types.js';
+import { PersistenceHelper, ProjectConfig, TypeConfig } from '../../../types.js';
 import { PersistenceResponse } from '../../../types.js';
-import { typeMap } from '../../contexTypeFactory';
 const { DateTime } = require('luxon');
 
 export class FileSystemHelper implements PersistenceHelper {
   contextRoot: string;
+  private configCache: Map<string, ProjectConfig> = new Map();
   
   constructor(
     contextRoot: string = path.join(os.homedir(), '.shared-project-context')
@@ -46,8 +46,11 @@ export class FileSystemHelper implements PersistenceHelper {
     }
 
     try {
-      const entries = await Promise.all(Object.keys(typeMap).map(async key => {
-        const contextTypePath = path.join(projectPath, key);
+      const config = await this.getProjectConfig(projectName);
+      const contextTypeNames = config.contextTypes.map(ct => ct.name);
+      
+      const entries = await Promise.all(contextTypeNames.map(async typeName => {
+        const contextTypePath = path.join(projectPath, typeName);
         await this.ensureDirectoryExists(contextTypePath);
         return await this.readDirectory(contextTypePath, { withFileTypes: true, recursive: true }) as Dirent[];
       }))
@@ -68,6 +71,13 @@ export class FileSystemHelper implements PersistenceHelper {
     await this.ensureDirectoryExists(path.join(projectPath, contextType));
 
     try {
+      const config = await this.getProjectConfig(projectName);
+      const contextTypeConfig = config.contextTypes.find(ct => ct.name === contextType);
+      
+      if (!contextTypeConfig) {
+        return { success: false, errors: [`Context type '${contextType}' not found in project configuration`] };
+      }
+
       const filePathPromises = contextNames.map(name => 
         this.getContextFilePath(projectName, contextType, name)
       );
@@ -81,16 +91,16 @@ export class FileSystemHelper implements PersistenceHelper {
         } catch (error) {
           if (
             error instanceof Error 
-            && (error as NodeJS.ErrnoException).code === 'ENOENT' 
-            && ['session_summary', 'features', 'mental_model'].includes(contextType)
+            && (error as NodeJS.ErrnoException).code === 'ENOENT'
           ) {
-            return { content: '', error: null, name: contextNames[index] };
-          } else if (
-            error instanceof Error 
-            && (error as NodeJS.ErrnoException).code === 'ENOENT' 
-            && ['other'].includes(contextType) 
-          ) {
-            return { content: null, error: 'Context not found. Have you created it using create_context yet?', name: contextNames[index] };
+            // Use configuration to determine missing file behavior
+            const shouldReturnEmpty = this.shouldReturnEmptyForMissingFile(contextTypeConfig);
+            
+            if (shouldReturnEmpty) {
+              return { content: '', error: null, name: contextNames[index] };
+            } else {
+              return { content: null, error: 'Context not found. Have you created it using create_context yet?', name: contextNames[index] };
+            }
           }
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
           return { content: null, error: errorMessage, name: contextNames[index] };
@@ -132,7 +142,14 @@ export class FileSystemHelper implements PersistenceHelper {
     await this.ensureDirectoryExists(path.join(projectPath, contextType));
     
     try {
-      const fileName = contextType === 'session_summary' 
+      const config = await this.getProjectConfig(projectName);
+      const contextTypeConfig = config.contextTypes.find(ct => ct.name === contextType);
+      
+      if (!contextTypeConfig) {
+        return { success: false, errors: [`Context type '${contextType}' not found in project configuration`] };
+      }
+
+      const fileName = contextTypeConfig.fileNaming === 'timestamped'
         ? this.generateTimestampedContextName(contextName) 
         : contextName;
      
@@ -147,6 +164,61 @@ export class FileSystemHelper implements PersistenceHelper {
     }
   }
 
+  async getTemplate(projectName: string, contextType: string): Promise<PersistenceResponse> {
+    try {
+      const config = await this.getProjectConfig(projectName);
+      const contextTypeConfig = config.contextTypes.find(ct => ct.name === contextType);
+      
+      if (!contextTypeConfig) {
+        return { success: false, errors: [`Context type '${contextType}' not found in project configuration`] };
+      }
+
+      const projectPath = await this.getProjectPath(projectName);
+      const projectTemplatesDir = path.join(projectPath, 'templates');
+      const templateName = contextTypeConfig.template || contextType;
+      const projectTemplatePath = path.join(projectTemplatesDir, `${templateName}.md`);
+      
+      // Check if project template exists
+      try {
+        const projectTemplateContent = await fs.readFile(projectTemplatePath, 'utf-8');
+        return {
+          success: true,
+          data: [projectTemplateContent]
+        };
+      } catch (projectError) {
+        // Project template doesn't exist, initialize it from repository default
+        try {
+          const repositoryRoot = path.resolve(__dirname, '../../../..');
+          const defaultTemplatePath = path.join(repositoryRoot, 'templates', `${templateName}.md`);
+          
+          // Read the repository default template
+          const defaultTemplateContent = await fs.readFile(defaultTemplatePath, 'utf-8');
+          
+          // Ensure project templates directory exists
+          await this.ensureDirectoryExists(projectTemplatesDir);
+          
+          // Copy the default template to the project
+          await fs.writeFile(projectTemplatePath, defaultTemplateContent);
+          
+          // Return the template content (now copied to project)
+          return {
+            success: true,
+            data: [defaultTemplateContent]
+          };
+        } catch (repositoryError) {
+          return {
+            success: false,
+            errors: [`Failed to load or initialize template for ${contextType}: ${repositoryError instanceof Error ? repositoryError.message : 'Unknown error'}`]
+          };
+        }
+      }
+    } catch (error) {
+      return {
+        success: false,
+        errors: [`Failed to load template for ${contextType}: ${error instanceof Error ? error.message : 'Unknown error'}`]
+      };
+    }
+  }
 
   async archiveContext(projectName: string, contextType: string, contextNames: string[]): Promise<PersistenceResponse> {
     const projectPath = await this.getProjectPath(projectName);
@@ -253,20 +325,24 @@ export class FileSystemHelper implements PersistenceHelper {
   }
 
   private async getContextFilePath(projectName: string, contextType: string, contextName?: string): Promise<string> {
-    const projectPath = await this.getProjectPath(projectName)
+    const projectPath = await this.getProjectPath(projectName);
+    const config = await this.getProjectConfig(projectName);
+    const contextTypeConfig = config.contextTypes.find(ct => ct.name === contextType);
+    
+    if (!contextTypeConfig) {
+      throw new Error(`Context type '${contextType}' not found in project configuration`);
+    }
+    
     await this.ensureDirectoryExists(path.join(projectPath, contextType));
-
-    switch (contextType) {
-      case 'session_summary':
+    
+    switch (contextTypeConfig.fileNaming) {
+      case 'timestamped':
+      case 'named':
         return path.join(projectPath, contextType, `${contextName}.md`);
-      case 'other':
-        return path.join(projectPath, contextType, `${contextName}.md`);
-      case 'mental_model':
-        return path.join(projectPath, contextType, `${contextType}.md`);
-      case 'features':
+      case 'single':
         return path.join(projectPath, contextType, `${contextType}.md`);
       default:
-        throw new Error('Invalid file type');
+        throw new Error(`Invalid fileNaming type: ${contextTypeConfig.fileNaming}`);
     }
   }
 
@@ -282,69 +358,39 @@ export class FileSystemHelper implements PersistenceHelper {
     return DateTime.utc().toFormat('yyyy-MM-dd\'T\'HH-mm-ss-SSS\'Z\'');
   }
 
-  async getTemplate(projectName: string, contextType: string): Promise<PersistenceResponse> {
-    try {
-      const projectPath = await this.getProjectPath(projectName);
-      const projectTemplatesDir = path.join(projectPath, 'templates');
-      const projectTemplatePath = path.join(projectTemplatesDir, `${contextType}.md`);
-      
-      // Check if project template exists
-      try {
-        const projectTemplateContent = await fs.readFile(projectTemplatePath, 'utf-8');
-        return {
-          success: true,
-          data: [projectTemplateContent]
-        };
-      } catch (projectError) {
-        // Project template doesn't exist, initialize it from repository default
-        try {
-          const repositoryRoot = path.resolve(__dirname, '../../../..');
-          const defaultTemplatePath = path.join(repositoryRoot, 'templates', `${contextType}.md`);
-          
-          // Read the repository default template
-          const defaultTemplateContent = await fs.readFile(defaultTemplatePath, 'utf-8');
-          
-          // Ensure project templates directory exists
-          await this.ensureDirectoryExists(projectTemplatesDir);
-          
-          // Copy the default template to the project
-          await fs.writeFile(projectTemplatePath, defaultTemplateContent);
-          
-          // Return the template content (now copied to project)
-          return {
-            success: true,
-            data: [defaultTemplateContent]
-          };
-        } catch (repositoryError) {
-          return {
-            success: false,
-            errors: [`Failed to load or initialize template for ${contextType}: ${repositoryError instanceof Error ? repositoryError.message : 'Unknown error'}`]
-          };
-        }
-      }
-    } catch (error) {
-      return {
-        success: false,
-        errors: [`Failed to load template for ${contextType}: ${error instanceof Error ? error.message : 'Unknown error'}`]
-      };
-    }
-  }
-
   private generateTimestampedContextName(contextType: string): string {
     return `${contextType}-${this.timestamp()}`;
   }
 
-  async getProjectConfig(projectName: string): Promise<ProjectConfig> {
+  private async getProjectConfig(projectName: string): Promise<ProjectConfig> {
+    // Check cache first
+    if (this.configCache.has(projectName)) {
+      return this.configCache.get(projectName)!;
+    }
+
     const projectPath = await this.getProjectPath(projectName);
     const configPath = path.join(projectPath, 'context-config.json');
     
+    let config: ProjectConfig;
+    
     try {
       const configContent = await fs.readFile(configPath, 'utf-8');
-      return JSON.parse(configContent);
+      config = JSON.parse(configContent);
     } catch (error) {
       // Return default configuration if config file doesn't exist
-      return this.getDefaultConfig();
+      config = this.getDefaultConfig();
     }
+    
+    // Cache the configuration
+    this.configCache.set(projectName, config);
+    return config;
+  }
+
+  // Helper method to determine missing file behavior based on config
+  private shouldReturnEmptyForMissingFile(contextTypeConfig: TypeConfig): boolean {
+    // Templated types (both log and document) should return empty for missing files
+    // Freeform types should return error for missing files
+    return contextTypeConfig.baseType === 'templated-log' || contextTypeConfig.baseType === 'templated-document';
   }
 
   private getDefaultConfig(): ProjectConfig {

@@ -50,6 +50,7 @@ class ListContextsHandler {
     }
   }
 
+  // TODO move back to file system with aget contexts for type method
   private getFilesForContextType(typeConfig: BaseTypeConfig, allFiles: string[]): string[] {
     if (typeConfig.name === 'other') {
       // Return all files that aren't core types

@@ -1,7 +1,7 @@
 import { ContexTypeResponse } from '../../types.js';
 import { BaseContextType } from './baseContextType.js';
 
-export class TemplatedLog extends BaseContextType {
+export class TemplatedLogType extends BaseContextType {
   async update(): Promise<ContexTypeResponse> {
     if (!this.content) {
       return {

@@ -38,13 +38,9 @@ export class MarkdownTemplateValidator {
 
       const template = templateResult.data[0];
       
-      // Normalize template variables before parsing
-      const normalizedTemplate = this.normalizeTemplateVariables(template);
-      const normalizedContent = this.normalizeTemplateVariables(content);
-      
-      // Parse both template and content
-      const templateStructure = this.parseMarkdownStructure(normalizedTemplate);
-      const contentStructure = this.parseMarkdownStructure(normalizedContent);
+      // Parse original content and template to extract headers
+      const templateStructure = this.parseMarkdownStructure(template);
+      const contentStructure = this.parseMarkdownStructure(content);
       
       // Validate structure
       const errors = this.validateStructure(contentStructure, templateStructure);
@@ -87,13 +83,21 @@ export class MarkdownTemplateValidator {
     // Check if line contains template variables
     const hasTemplateVars = /{{\s*[^}]+\s*}}/.test(line);
     
-    if (hasTemplateVars) {
+    // Check if line is a placeholder (dash followed by optional content)
+    const isPlaceholder = /^-\s*$/.test(line);
+    
+    if (hasTemplateVars || isPlaceholder) {
       // Convert template line to a regex pattern that matches surrounding content
       // Step 1: Escape special regex characters
       let escaped = line.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       
       // Step 2: Replace escaped template variables with .* pattern
       let pattern = escaped.replace(/\\{\\{[^}]*\\}\\}/g, '.*');
+      
+      // Step 3: Handle placeholder lines (- ) to match any bullet point content
+      if (isPlaceholder) {
+        pattern = '\\-\\s.*';
+      }
       
       return `TEMPLATE_PATTERN:${pattern}`;
     } else {
@@ -103,8 +107,18 @@ export class MarkdownTemplateValidator {
   }
   
   private linesMatch(templateLine: string, contentLine: string): boolean {
-    // If template line is a pattern, use regex matching
-    if (templateLine.startsWith('TEMPLATE_PATTERN:')) {
+    // Check if template line contains template variables or placeholders
+    const hasTemplateVars = /{{\s*[^}]+\s*}}/.test(templateLine);
+    const isPlaceholder = /^-\s*$/.test(templateLine);
+    
+    if (hasTemplateVars || isPlaceholder) {
+      // Apply template pattern matching
+      const normalizedTemplate = this.normalizeTemplateLine(templateLine);
+      const pattern = normalizedTemplate.replace('TEMPLATE_PATTERN:', '');
+      const regex = new RegExp(`^${pattern}$`);
+      return regex.test(contentLine);
+    } else if (templateLine.startsWith('TEMPLATE_PATTERN:')) {
+      // Already normalized template pattern
       const pattern = templateLine.replace('TEMPLATE_PATTERN:', '');
       const regex = new RegExp(`^${pattern}$`);
       return regex.test(contentLine);
