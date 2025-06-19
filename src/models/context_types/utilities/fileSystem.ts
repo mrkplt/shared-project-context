@@ -2,7 +2,7 @@ import { Dirent } from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import fs from 'fs/promises';
-import { PersistenceHelper } from '../../../types.js';
+import { PersistenceHelper, ProjectConfig, BaseTypeConfig } from '../../../types.js';
 import { PersistenceResponse } from '../../../types.js';
 import { typeMap } from '../../contexTypeFactory';
 const { DateTime } = require('luxon');
@@ -332,5 +332,56 @@ export class FileSystemHelper implements PersistenceHelper {
 
   private generateTimestampedContextName(contextType: string): string {
     return `${contextType}-${this.timestamp()}`;
+  }
+
+  async getProjectConfig(projectName: string): Promise<ProjectConfig> {
+    const projectPath = await this.getProjectPath(projectName);
+    const configPath = path.join(projectPath, 'context-config.json');
+    
+    try {
+      const configContent = await fs.readFile(configPath, 'utf-8');
+      return JSON.parse(configContent);
+    } catch (error) {
+      // Return default configuration if config file doesn't exist
+      return this.getDefaultConfig();
+    }
+  }
+
+  private getDefaultConfig(): ProjectConfig {
+    return {
+      contextTypes: [
+        {
+          baseType: 'templated-log',
+          name: 'session_summary',
+          description: 'Append-only log of development sessions. Each entry is timestamped and follows the session_summary template. Use get_context("session_summary") to read all entries chronologically, and update_context("session_summary", content) to append a new entry.',
+          template: 'session_summary',
+          fileNaming: 'timestamped',
+          validation: true
+        },
+        {
+          baseType: 'templated-document',
+          name: 'mental_model',
+          description: 'Single document tracking current technical architecture understanding. Replaces on update. Must follow the mental_model template. Use get_context("mental_model") to read and update_context("mental_model", content) to replace.',
+          template: 'mental_model',
+          fileNaming: 'single',
+          validation: true
+        },
+        {
+          baseType: 'templated-document',
+          name: 'features',
+          description: 'Single document tracking implementation status. Replaces on update. Must follow the features template. Use get_context("features") to read and update_context("features", content) to replace.',
+          template: 'features',
+          fileNaming: 'single',
+          validation: true
+        },
+        {
+          baseType: 'freeform-document',
+          name: 'other',
+          description: 'Arbitrary named files for reference documents. No template required. Use get_context("other", "filename") to read and update_context("other", content, "filename") to create or update files.',
+          fileNaming: 'named',
+          validation: false
+        }
+      ]
+    };
   }
 }

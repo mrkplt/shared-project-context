@@ -20,7 +20,7 @@ class UpdateContextHandler {
 
   async handle(args: UpdateContextArgs): Promise<{ content: ContentItem[] }> {
     
-    const contextType = ContextTypeFactory({
+    const contextType = await ContextTypeFactory({
       projectName: args.projectName,
       persistenceHelper: this.fsHelper,
       contextType: args.contextType,
