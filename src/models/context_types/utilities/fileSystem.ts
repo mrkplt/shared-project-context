@@ -56,7 +56,6 @@ export class FileSystemHelper implements PersistenceHelper {
     // name would be enough.
     // 
 
-
     try {
       const entries = await Promise.all(Object.keys(typeMap).map(async key => {
         const contextTypePath = path.join(projectPath, key);
@@ -159,6 +158,54 @@ export class FileSystemHelper implements PersistenceHelper {
     }
   }
 
+  //TODO: Add caching here to the template retrieval
+  async getTemplate(projectName: string, contextType: string): Promise<PersistenceResponse> {
+    try {
+      const projectPath = await this.getProjectPath(projectName);
+      const projectTemplatesDir = path.join(projectPath, 'templates');
+      const projectTemplatePath = path.join(projectTemplatesDir, `${contextType}.md`);
+      
+      // Check if project template exists
+      try {
+        const projectTemplateContent = await fs.readFile(projectTemplatePath, 'utf-8');
+        return {
+          success: true,
+          data: [projectTemplateContent]
+        };
+      } catch (projectError) {
+        // Project template doesn't exist, initialize it from repository default
+        try {
+          const repositoryRoot = path.resolve(__dirname, '../../../..');
+          const defaultTemplatePath = path.join(repositoryRoot, 'templates', `${contextType}.md`);
+          
+          // Read the repository default template
+          const defaultTemplateContent = await fs.readFile(defaultTemplatePath, 'utf-8');
+          
+          // Ensure project templates directory exists
+          await this.ensureDirectoryExists(projectTemplatesDir);
+          
+          // Copy the default template to the project
+          await fs.writeFile(projectTemplatePath, defaultTemplateContent);
+          
+          // Return the template content (now copied to project)
+          return {
+            success: true,
+            data: [defaultTemplateContent]
+          };
+        } catch (repositoryError) {
+          return {
+            success: false,
+            errors: [`Failed to load or initialize template for ${contextType}: ${repositoryError instanceof Error ? repositoryError.message : 'Unknown error'}`]
+          };
+        }
+      }
+    } catch (error) {
+      return {
+        success: false,
+        errors: [`Failed to load template for ${contextType}: ${error instanceof Error ? error.message : 'Unknown error'}`]
+      };
+    }
+  }
 
   async archiveContext(projectName: string, contextType: string, contextNames: string[]): Promise<PersistenceResponse> {
     const projectPath = await this.getProjectPath(projectName);
@@ -294,54 +341,6 @@ export class FileSystemHelper implements PersistenceHelper {
     return DateTime.utc().toFormat('yyyy-MM-dd\'T\'HH-mm-ss-SSS\'Z\'');
   }
 
-  async getTemplate(projectName: string, contextType: string): Promise<PersistenceResponse> {
-    try {
-      const projectPath = await this.getProjectPath(projectName);
-      const projectTemplatesDir = path.join(projectPath, 'templates');
-      const projectTemplatePath = path.join(projectTemplatesDir, `${contextType}.md`);
-      
-      // Check if project template exists
-      try {
-        const projectTemplateContent = await fs.readFile(projectTemplatePath, 'utf-8');
-        return {
-          success: true,
-          data: [projectTemplateContent]
-        };
-      } catch (projectError) {
-        // Project template doesn't exist, initialize it from repository default
-        try {
-          const repositoryRoot = path.resolve(__dirname, '../../../..');
-          const defaultTemplatePath = path.join(repositoryRoot, 'templates', `${contextType}.md`);
-          
-          // Read the repository default template
-          const defaultTemplateContent = await fs.readFile(defaultTemplatePath, 'utf-8');
-          
-          // Ensure project templates directory exists
-          await this.ensureDirectoryExists(projectTemplatesDir);
-          
-          // Copy the default template to the project
-          await fs.writeFile(projectTemplatePath, defaultTemplateContent);
-          
-          // Return the template content (now copied to project)
-          return {
-            success: true,
-            data: [defaultTemplateContent]
-          };
-        } catch (repositoryError) {
-          return {
-            success: false,
-            errors: [`Failed to load or initialize template for ${contextType}: ${repositoryError instanceof Error ? repositoryError.message : 'Unknown error'}`]
-          };
-        }
-      }
-    } catch (error) {
-      return {
-        success: false,
-        errors: [`Failed to load template for ${contextType}: ${error instanceof Error ? error.message : 'Unknown error'}`]
-      };
-    }
-  }
-
   private generateTimestampedContextName(contextType: string): string {
     return `${contextType}-${this.timestamp()}`;
   }
@@ -364,7 +363,6 @@ export class FileSystemHelper implements PersistenceHelper {
   // this fail if these aren't here. I also think this maybe should all 
   // move back to configs per one of my todos
 
-  //TODO: add untemplated log below
   private getDefaultConfig(): ProjectConfig {
     return {
       contextTypes: [
