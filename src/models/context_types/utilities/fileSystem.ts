@@ -4,7 +4,7 @@ import * as path from 'path';
 import fs from 'fs/promises';
 import { PersistenceHelper, ProjectConfig, TypeConfig } from '../../../types.js';
 import { PersistenceResponse } from '../../../types.js';
-const { DateTime } = require('luxon');
+import { DateTime } from 'luxon';
 
 export class FileSystemHelper implements PersistenceHelper {
   contextRoot: string;
