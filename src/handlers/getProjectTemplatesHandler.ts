@@ -18,7 +18,10 @@ class GetProjectTemplatesHandler {
     try {
       const response = await this.fsHelper.getProjectConfig(args.projectName);
       if (!response.success || !response.config) {
-        return { content: [{ type: 'text', text: `Failed to load project configuration.` }] };
+        return { content: [
+          { type: 'text', text: `GetProjectTemplatesHandler: Failed to load project configuration.` },
+          { type: 'text', text: response.errors?.join(', ') || 'Unknown error' },
+        ] };
       }
       const contextTypes = response
         .config

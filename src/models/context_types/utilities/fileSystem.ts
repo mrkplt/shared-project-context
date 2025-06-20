@@ -42,7 +42,7 @@ export class FileSystemHelper implements PersistenceHelper {
   async getContext(projectName: string, contextType: string, contextNames?: string[]): Promise<PersistenceResponse> {
     const response = await this.getProjectConfig(projectName);
     if (!response.success || !response.config) {
-      return { success: false, errors: [`Failed to load project configuration.`] };
+      return { success: false, errors: [`getContext: Failed to load project configuration.`] };
     }
     const config = response.config;
     const contextTypeConfig = config.contextTypes.find(ct => ct.name === contextType);
@@ -144,7 +144,7 @@ export class FileSystemHelper implements PersistenceHelper {
     try {
       const response = await this.getProjectConfig(projectName);
       if (!response.success || !response.config) {
-        return { success: false, errors: [`Failed to load project configuration.`] };
+        return { success: false, errors: [`WriteContext: Failed to load project configuration.`] };
       }
       const config = response.config;
       const contextTypeConfig = config.contextTypes.find(ct => ct.name === contextType);
@@ -172,7 +172,7 @@ export class FileSystemHelper implements PersistenceHelper {
     try {
       const response = await this.getProjectConfig(projectName);
       if (!response.success || !response.config) {
-        return { success: false, errors: [`Failed to load project configuration.`] };
+        return { success: false, errors: [`getTemplate: Failed to load project configuration.`] };
       }
 
       const config = response.config;
@@ -232,7 +232,7 @@ export class FileSystemHelper implements PersistenceHelper {
   async archiveContext(projectName: string, contextType: string, contextNames?: string[]): Promise<PersistenceResponse> {
     const response = await this.getProjectConfig(projectName);
     if (!response.success || !response.config) {
-      return { success: false, errors: [`Failed to load project configuration.`] };
+      return { success: false, errors: [`archiveContext: Failed to load project configuration.`] };
     }
     const config = response.config;
     const contextTypeConfig = config.contextTypes.find(ct => ct.name === contextType);
@@ -319,24 +319,45 @@ export class FileSystemHelper implements PersistenceHelper {
     if (this.configCache.has(projectName)) {
       return { success: true, config: this.configCache.get(projectName) };
     }
-
+  
     const projectPath = await this.getProjectPath(projectName);
-    const configPath = path.join(projectPath, 'context-config.json');
+    const configPath = path.join(projectPath, 'project-config.json');
     
     let config: ProjectConfig;
     
     try {
       const configContent = await fs.readFile(configPath, 'utf-8');
-      config = JSON.parse(configContent);
+      try {
+        config = JSON.parse(configContent);
+      } catch (parseError) {
+        const errorMessage = `Error parsing config file: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`;
+        return { success: false, errors: [errorMessage] };
+      }
     } catch (error) {
-      // Return default configuration if config file doesn't exist
-      config = this.getDefaultConfig();
+      // Only create default config if file doesn't exist
+      const isNodeError = (error: any): error is NodeJS.ErrnoException => {
+        return error && typeof error === 'object' && 'code' in error;
+      };
+      
+      if (isNodeError(error) && error.code === 'ENOENT') {
+        config = this.getDefaultConfig();
+        try {
+          await fs.writeFile(configPath, JSON.stringify(config, null, 2));
+        } catch (writeError) {
+          const errorMessage = `Error creating default config: ${writeError instanceof Error ? writeError.message : 'Unknown error'}`;
+          return { success: false, errors: [errorMessage] };
+        }
+      } else {
+        // For any other error reading the file, return the error
+        const errorMessage = `Error reading config file: ${error instanceof Error ? error.message : 'Unknown error'}`;
+        return { success: false, errors: [errorMessage] };
+      }
     }
     
     // Cache the configuration
     this.configCache.set(projectName, config);
     return { success: true, config: config };
-  }
+}
 
   async listAllContextForType(projectName: string, contextType: string): Promise<PersistenceResponse> {
     const contextTypePath = path.join(await this.getProjectPath(projectName), contextType);
@@ -397,7 +418,7 @@ export class FileSystemHelper implements PersistenceHelper {
     const projectPath = await this.getProjectPath(projectName);
     const response = await this.getProjectConfig(projectName);
     if (!response.success || !response.config) {
-      throw new Error(`Failed to load project configuration.`);
+      throw new Error(`getContextFilePath: Failed to load project configuration.`);
     }
     const config = response.config;
     const contextTypeConfig = config.contextTypes.find(ct => ct.name === contextType);
@@ -446,33 +467,9 @@ export class FileSystemHelper implements PersistenceHelper {
     return {
       contextTypes: [
         {
-          baseType: 'templated-log',
-          name: 'session_summary',
-          description: 'Append-only log of development sessions. Each entry is timestamped and follows the session_summary template. Use get_context("session_summary") to read all entries chronologically, and update_context("session_summary", content) to append a new entry.',
-          template: 'session_summary',
-          fileNaming: 'timestamped',
-          validation: true
-        },
-        {
-          baseType: 'templated-document',
-          name: 'mental_model',
-          description: 'Single document tracking current technical architecture understanding. Replaces on update. Must follow the mental_model template. Use get_context("mental_model") to read and update_context("mental_model", content) to replace.',
-          template: 'mental_model',
-          fileNaming: 'single',
-          validation: true
-        },
-        {
-          baseType: 'templated-document',
-          name: 'features',
-          description: 'Single document tracking implementation status. Replaces on update. Must follow the features template. Use get_context("features") to read and update_context("features", content) to replace.',
-          template: 'features',
-          fileNaming: 'single',
-          validation: true
-        },
-        {
           baseType: 'freeform-document',
-          name: 'other',
-          description: 'Arbitrary named files for reference documents. No template required. Use get_context("other", "filename") to read and update_context("other", content, "filename") to create or update files.',
+          name: 'general',
+          description: 'Arbitrary named files for reference documents. No template required. Use get_context("general", "filename") to read and update_context("general", content, "filename") to create or update files.',
           fileNaming: 'named',
           validation: false
         }

@@ -46,10 +46,8 @@ class UpdateContextHandler {
       if (!response.success || !response.config) {
         return {
           content: [
-            {
-              type: 'text',
-              text: 'Failed to load project configuration.'
-            }
+            { type: 'text', text: 'UpdateContextHandler: Failed to load project configuration.' },
+            { type: 'text', text: response.errors?.join(', ') || 'Unknown error' }
           ]
         }
       }

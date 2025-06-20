@@ -28,7 +28,7 @@ export default async function contextTypeFactory(args: ContextTypeFactoryArgs): 
     // Load project configuration
     const response = await persistenceHelper.getProjectConfig(projectName);
     if (!response.success || !response.config) {
-        throw new Error(`Failed to load project configuration.`);
+        throw new Error(`Failed to load project configuration. ${response.errors?.join(', ') || 'Unknown error'}`);
     }
     // Find the context type configuration
     const typeConfig = response.config.contextTypes.find(ct => ct.name === contextType);
