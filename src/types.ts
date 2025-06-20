@@ -56,7 +56,7 @@ export interface PersistenceResponse {
 export interface PersistenceHelper {
    listProjects(): Promise<PersistenceResponse>;
    initProject(projectName: string): Promise<PersistenceResponse>;
-   listAllContextForProject(projectName: string): Promise<PersistenceResponse>;
+   listAllContextForType(projectName: string, contextType: string): Promise<PersistenceResponse>;
    writeContext(projectName: string, contextType: string, contextName: string, content: string): Promise<PersistenceResponse>
    getContext(projectName: string, contextType: string, contextName: string[]): Promise<PersistenceResponse>;
    archiveContext(projectName: string, contextType: string, contextName: string[]): Promise<PersistenceResponse>;
