@@ -1,6 +1,6 @@
 {
   "name": "shared-project-context",
-  "version": "0.2-pre",
+  "version": "0.5-pre",
   "description": "MCP Server for managing AI agent context with validation and correction guidance",
   "main": "dist/index.js",
   "bin": {
