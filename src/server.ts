@@ -17,7 +17,7 @@ import GetProjectTemplatesHandler from './handlers/getProjectTemplatesHandler';
 // Main server class that implements the MCP protocol
 class ContextManagerServer {
   private server: Server;
-  private fsHelper: FileSystemHelper;
+  private persistenceHelper: FileSystemHelper;
   private listProjectsHandler!: ListProjectsHandler;
   private listContextsHandler!: ListContextsHandler;
   private getContextHandler!: GetContextHandler;
@@ -28,15 +28,15 @@ class ContextManagerServer {
 
   constructor() {
     // Initialize filesystem helper
-    this.fsHelper = new FileSystemHelper();
+    this.persistenceHelper = new FileSystemHelper();
     
-    this.listProjectsHandler = new ListProjectsHandler(this.fsHelper);
-    this.listContextsHandler = new ListContextsHandler(this.fsHelper);
-    this.createProjectHandler = new CreateProjectHandler(this.fsHelper);
-    this.getContextHandler = new GetContextHandler(this.fsHelper);
-    this.updateContextHandler = new UpdateContextHandler(this.fsHelper);
-    this.resetContextHandler = new ResetContextHandler(this.fsHelper);
-    this.getProjectTemplatesHandler = new GetProjectTemplatesHandler(this.fsHelper);
+    this.listProjectsHandler = new ListProjectsHandler(this.persistenceHelper);
+    this.listContextsHandler = new ListContextsHandler(this.persistenceHelper);
+    this.createProjectHandler = new CreateProjectHandler(this.persistenceHelper);
+    this.getContextHandler = new GetContextHandler(this.persistenceHelper);
+    this.updateContextHandler = new UpdateContextHandler(this.persistenceHelper);
+    this.resetContextHandler = new ResetContextHandler(this.persistenceHelper);
+    this.getProjectTemplatesHandler = new GetProjectTemplatesHandler(this.persistenceHelper);
     
     // TODO: indicate that further instruction about how to use the contexts is available somehwere and make it dynamic
     this.server = new Server(
