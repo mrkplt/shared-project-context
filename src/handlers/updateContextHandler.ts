@@ -41,8 +41,22 @@ class UpdateContextHandler {
       ];
       
       // Only include template information for core types that support template validation
-      // TODO: move back to file system with aget contexts for type method
-      if (['session_summary', 'mental_model', 'features'].includes(args.contextType) && validationResult.templateUsed) {
+
+      const response = await this.fsHelper.getProjectConfig(args.projectName);
+      if (!response.success || !response.config) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: 'Failed to load project configuration.'
+            }
+          ]
+        }
+      }
+
+      const templateContextTypes = response.config.contextTypes.filter(ct => ct.template).map(ct => ct.name);
+
+      if (templateContextTypes.includes(args.contextType) && validationResult.templateUsed) {
         errorMessages.push(
           '',
           'Template used for validation:',
