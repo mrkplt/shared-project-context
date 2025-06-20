@@ -17,7 +17,8 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "lint": "eslint 'src/**/*.ts'",
-    "install-server": "npm run build && npm install -g . && chmod +x \"$(npm root -g)/shared-project-context/dist/server.js\""
+    "remove-server": "npm uninstall -g shared-project-context",
+    "install-server": "npm run build && npm run remove-server && npm pack && npm install -g shared-project-context-*-pre.tgz && chmod +x \"$(npm root -g)/shared-project-context/dist/server.js\" && rm shared-project-context-*-pre.tgz"
   },
   "keywords": [
     "mcp",
