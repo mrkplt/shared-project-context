@@ -9,17 +9,17 @@ interface ResetContextArgs {
 }
 
 class ResetContextHandler {
-  private fsHelper: FileSystemHelper;
+  private persistenceHelper: FileSystemHelper;
 
   constructor(
-    fsHelper: FileSystemHelper 
+    persistenceHelper: FileSystemHelper 
   ) {
-    this.fsHelper = fsHelper;
+    this.persistenceHelper = persistenceHelper;
   }
 
   async handle(args: ResetContextArgs): Promise<{ content: ContentItem[] }> {
     const contextType = await ContextTypeFactory({
-      persistenceHelper: this.fsHelper,
+      persistenceHelper: this.persistenceHelper,
       projectName: args.projectName,
       contextType: args.contextType,
       contextName: args.contextName

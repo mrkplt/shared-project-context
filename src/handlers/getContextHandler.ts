@@ -9,18 +9,18 @@ interface GetContextArgs {
 }
 
 class GetContextHandler {
-  private fsHelper: FileSystemHelper;
+  private persistenceHelper: FileSystemHelper;
   
   constructor(
-    fsHelper: FileSystemHelper
+    persistenceHelper: FileSystemHelper
   ) {
-    this.fsHelper = fsHelper;
+    this.persistenceHelper = persistenceHelper;
   }
 
   async handle(args: GetContextArgs): Promise<{ content: ContentItem[] }> {
     const contextType = await ContextTypeFactory({
       projectName: args.projectName,
-      persistenceHelper: this.fsHelper,
+      persistenceHelper: this.persistenceHelper,
       contextType: args.contextType,
       contextName: args.contextName
     });

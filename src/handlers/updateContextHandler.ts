@@ -10,19 +10,19 @@ interface UpdateContextArgs {
 }
 
 class UpdateContextHandler {
-  private fsHelper: FileSystemHelper;
+  private persistenceHelper: FileSystemHelper;
 
   constructor(
-    fsHelper: FileSystemHelper 
+    persistenceHelper: FileSystemHelper 
   ) {
-    this.fsHelper = fsHelper;
+    this.persistenceHelper = persistenceHelper;
   }
 
   async handle(args: UpdateContextArgs): Promise<{ content: ContentItem[] }> {
     
     const contextType = await ContextTypeFactory({
       projectName: args.projectName,
-      persistenceHelper: this.fsHelper,
+      persistenceHelper: this.persistenceHelper,
       contextType: args.contextType,
       contextName: args.contextName,
       content: args.content
@@ -42,7 +42,7 @@ class UpdateContextHandler {
       
       // Only include template information for core types that support template validation
 
-      const response = await this.fsHelper.getProjectConfig(args.projectName);
+      const response = await this.persistenceHelper.getProjectConfig(args.projectName);
       if (!response.success || !response.config) {
         return {
           content: [

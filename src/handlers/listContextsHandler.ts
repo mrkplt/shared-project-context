@@ -6,16 +6,16 @@ interface ListContextsArgs {
 }
 
 class ListContextsHandler {
-  private fsHelper: FileSystemHelper;
+  private persistenceHelper: FileSystemHelper;
   
-  constructor(fsHelper: FileSystemHelper) {
-    this.fsHelper = fsHelper;
+  constructor(persistenceHelper: FileSystemHelper) {
+    this.persistenceHelper = persistenceHelper;
   }
 
   async handle(args: ListContextsArgs): Promise<{ content: ContentItem[] }> {
     try {
       // Get project configuration
-      const response = await this.fsHelper.getProjectConfig(args.projectName);
+      const response = await this.persistenceHelper.getProjectConfig(args.projectName);
       if (!response.success || !response.config) {
         return { content: [
           { type: 'text', text: 'ListContextsHandler: Failed to load project configuration.' },
@@ -32,7 +32,7 @@ class ListContextsHandler {
         
         try {
           // Get context names for this type
-          const contextNamesResponse = await this.fsHelper.listAllContextForType(
+          const contextNamesResponse = await this.persistenceHelper.listAllContextForType(
             args.projectName, 
             typeConfig.name
           );

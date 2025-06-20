@@ -6,17 +6,17 @@ interface GetProjectTemplatesArgs {
 }
 
 class GetProjectTemplatesHandler {
-  private fsHelper: FileSystemHelper;
+  private persistenceHelper: FileSystemHelper;
   
   constructor(
-    fsHelper: FileSystemHelper,
+    persistenceHelper: FileSystemHelper,
   ) {
-    this.fsHelper = fsHelper;
+    this.persistenceHelper = persistenceHelper;
   }
 
   async handle(args: GetProjectTemplatesArgs): Promise<{ content: ContentItem[] }> {
     try {
-      const response = await this.fsHelper.getProjectConfig(args.projectName);
+      const response = await this.persistenceHelper.getProjectConfig(args.projectName);
       if (!response.success || !response.config) {
         return { content: [
           { type: 'text', text: `GetProjectTemplatesHandler: Failed to load project configuration.` },
@@ -33,7 +33,7 @@ class GetProjectTemplatesHandler {
       
       // Retrieve each template iteratively
       for (const contextType of contextTypes) {
-        const result = await this.fsHelper.getTemplate(args.projectName, contextType);
+        const result = await this.persistenceHelper.getTemplate(args.projectName, contextType);
         
         if (result.success && result.data && result.data.length > 0) {
           templates[contextType] = result.data[0];

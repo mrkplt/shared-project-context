@@ -2,17 +2,17 @@ import { ContentItem } from '../types';
 import { FileSystemHelper } from '../models/context_types/utilities/fileSystem';
 
 class CreateProjectHandler {
-  private fsHelper: FileSystemHelper;
+  private persistenceHelper: FileSystemHelper;
   
   constructor(
-    fsHelper: FileSystemHelper,
+    persistenceHelper: FileSystemHelper,
   ) {
-    this.fsHelper = fsHelper;
+    this.persistenceHelper = persistenceHelper;
     }
 
   async handle(args: {projectName: string}): Promise<{ content: ContentItem[] }> {
     try {
-      await this.fsHelper.initProject(args.projectName);
+      await this.persistenceHelper.initProject(args.projectName);
       return {
         content: [{
           type: 'text',

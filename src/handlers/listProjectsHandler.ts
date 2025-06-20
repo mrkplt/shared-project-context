@@ -6,17 +6,16 @@ interface ContentItem {
 }
 
 class ListProjectsHandler {
-  private fsHelper: FileSystemHelper
+  private persistenceHelper: FileSystemHelper
 
   constructor(
-
-    fsHelper: FileSystemHelper
+    persistenceHelper: FileSystemHelper
   ) {
-    this.fsHelper = fsHelper;
+    this.persistenceHelper = persistenceHelper;
   }
 
   async handle(): Promise<{ content: ContentItem[] }> {
-    const projects = await this.fsHelper.listProjects();
+    const projects = await this.persistenceHelper.listProjects();
     return {
       content: [{
         type: 'text',
