@@ -66,19 +66,17 @@ export class FileSystemHelper implements PersistenceHelper {
     }
   }
   
-  // If the contextNames are specified, then return the specified contexts.
-  // If the contextNames are not specified, then return all contexts for the specified context type.
   async getContext(projectName: string, contextType: string, contextNames?: string[]): Promise<PersistenceResponse> {
     const response = await this.getProjectConfig(projectName);
-      if (!response.success || !response.config) {
-        return { success: false, errors: [`Failed to load project configuration.`] };
-      }
-      const config = response.config;
-      const contextTypeConfig = config.contextTypes.find(ct => ct.name === contextType);
-      
-      if (!contextTypeConfig) {
-        return { success: false, errors: [`Context type '${contextType}' not found in project configuration`] };
-      }
+    if (!response.success || !response.config) {
+      return { success: false, errors: [`Failed to load project configuration.`] };
+    }
+    const config = response.config;
+    const contextTypeConfig = config.contextTypes.find(ct => ct.name === contextType);
+    
+    if (!contextTypeConfig) {
+      return { success: false, errors: [`Context type '${contextType}' not found in project configuration`] };
+    }
     
     if (!await this.projectExists(projectName)) {
       return {success: false, errors: [`Project '${projectName}' does not exist. Create it first using create_project.`]};
@@ -90,6 +88,9 @@ export class FileSystemHelper implements PersistenceHelper {
     }
 
     await this.ensureDirectoryExists(path.join(projectPath, contextType));
+    // If the contextNames are specified, then return the specified contexts.
+    // If the contextNames are not specified, then return all contexts for
+    // the specified context type.
     // yes, derive context names gets all the files paths, and then renders 
     // them into context names, then yes, it then goes and rebuilds all those 
     // paths to retrieve the contents
@@ -152,14 +153,6 @@ export class FileSystemHelper implements PersistenceHelper {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return { success: false, errors: [errorMessage] };
     }
-  }
-
-  async retrieveContextNamesForType(projectName: string, contextType: string): Promise<string[]> {
-    const contextTypePath = path.join(await this.getProjectPath(projectName), contextType);
-    await this.ensureDirectoryExists(contextTypePath);
-    
-    const dirEntries = await this.readDirectory(contextTypePath, { withFileTypes: true, recursive: true }) as Dirent[];
-    return await this.onlyContextNamesFromDirectory(dirEntries)  
   }
 
   async writeContext(projectName: string, contextType: string, contextName: string, content: string): Promise<PersistenceResponse> {
@@ -258,7 +251,22 @@ export class FileSystemHelper implements PersistenceHelper {
     }
   }
 
-  async archiveContext(projectName: string, contextType: string, contextNames: string[]): Promise<PersistenceResponse> {
+  async archiveContext(projectName: string, contextType: string, contextNames?: string[]): Promise<PersistenceResponse> {
+    const response = await this.getProjectConfig(projectName);
+    if (!response.success || !response.config) {
+      return { success: false, errors: [`Failed to load project configuration.`] };
+    }
+    const config = response.config;
+    const contextTypeConfig = config.contextTypes.find(ct => ct.name === contextType);
+    
+    if (!contextTypeConfig) {
+      return { success: false, errors: [`Context type '${contextType}' not found in project configuration`] };
+    }
+    
+    if (!await this.projectExists(projectName)) {
+      return {success: false, errors: [`Project '${projectName}' does not exist. Create it first using create_project.`]};
+    }
+
     const projectPath = await this.getProjectPath(projectName);
     if (!(await this.fileExists(projectPath))) {
       return {success: false, errors: [`Project '${projectName}' does not exist. Create it first using create_project.`]};
@@ -267,15 +275,18 @@ export class FileSystemHelper implements PersistenceHelper {
     await this.ensureDirectoryExists(path.join(projectPath, 'archive', contextType));
 
     try {
-      const projectPath = await this.getProjectPath(projectName);
       const timestamp = this.timestamp();
       const archiveDir = path.join(projectPath, 'archive', contextType, timestamp);
       
       // Ensure the archive directory exists
       await this.ensureDirectoryExists(archiveDir);
       
+      const workingContextNames = contextNames 
+      ? contextNames
+      : await this.retrieveContextNamesForType(projectName, contextType)
+
       // Process each context name
-      const movePromises = contextNames.map(async (contextName) => {
+      const movePromises = workingContextNames.map(async (contextName) => {
         try {
           // Get the source file path
           const sourceFilePath = await this.getContextFilePath(projectName, contextType, contextName);
@@ -342,6 +353,14 @@ export class FileSystemHelper implements PersistenceHelper {
     // Cache the configuration
     this.configCache.set(projectName, config);
     return { success: true, config: config };
+  }
+
+  private async retrieveContextNamesForType(projectName: string, contextType: string): Promise<string[]> {
+    const contextTypePath = path.join(await this.getProjectPath(projectName), contextType);
+    await this.ensureDirectoryExists(contextTypePath);
+    
+    const dirEntries = await this.readDirectory(contextTypePath, { withFileTypes: true, recursive: true }) as Dirent[];
+    return await this.onlyContextNamesFromDirectory(dirEntries)  
   }
 
   private async readDirectory(dirPath: string, options: { withFileTypes: boolean, recursive?: boolean } = { withFileTypes: true }): Promise<string[] | Dirent[]> {
