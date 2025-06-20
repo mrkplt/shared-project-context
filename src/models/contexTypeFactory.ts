@@ -3,7 +3,7 @@ import { FreeformDocumentType } from './context_types/freeformDocumentType.js';
 import { TemplatedLogType } from './context_types/templatedLogType.js';
 import { LogType } from './context_types/freeformLogType.js';
 import { FileSystemHelper } from './context_types/utilities/fileSystem.js';
-import { ContextType, ContextTypeArgs, BaseTypeConfig } from '../types.js';
+import { ContextType, ContextTypeArgs, TypeConfig } from '../types.js';
 
 interface ContextTypeFactoryArgs {
     persistenceHelper: FileSystemHelper;
@@ -13,7 +13,7 @@ interface ContextTypeFactoryArgs {
     content?: string;
 }
 
-type BaseContextTypeConstructor = new (args: ContextTypeArgs, config: BaseTypeConfig) => ContextType;
+type BaseContextTypeConstructor = new (args: ContextTypeArgs, config: TypeConfig) => ContextType;
 
 const baseTypeMap = new Map<string, BaseContextTypeConstructor>([
     ['templated-document', TemplatedDocumentType as BaseContextTypeConstructor],
@@ -26,10 +26,12 @@ export default async function contextTypeFactory(args: ContextTypeFactoryArgs): 
     const { persistenceHelper, projectName, contextType, contextName, content } = args;
     
     // Load project configuration
-    const config = await persistenceHelper.getProjectConfig(projectName);
-    
+    const response = await persistenceHelper.getProjectConfig(projectName);
+    if (!response.success || !response.config) {
+        throw new Error(`Failed to load project configuration.`);
+    }
     // Find the context type configuration
-    const typeConfig = config.contextTypes.find(ct => ct.name === contextType);
+    const typeConfig = response.config.contextTypes.find(ct => ct.name === contextType);
     
     if (!typeConfig) {
         throw new Error(`Unknown context type: ${contextType}`);
@@ -48,12 +50,3 @@ export default async function contextTypeFactory(args: ContextTypeFactoryArgs): 
         typeConfig
     );
 }
-
-// Keep the old typeMap for backward compatibility in FileSystemHelper
-// TODO: remove this
-export const typeMap = {
-    session_summary: 'session_summary',
-    mental_model: 'mental_model',
-    features: 'features',
-    other: 'other'
-} as const;

@@ -1,6 +1,5 @@
 import { FileSystemHelper } from '../models/context_types/utilities/fileSystem';
 import { ContentItem } from '../types';
-import { typeMap } from '../models/contexTypeFactory';
 
 interface GetProjectTemplatesArgs {
   projectName: string;
@@ -17,12 +16,16 @@ class GetProjectTemplatesHandler {
 
   async handle(args: GetProjectTemplatesArgs): Promise<{ content: ContentItem[] }> {
     try {
-      // Get all context types excluding 'other' since it will never exist
-      // This needs to be updated to be aware of the configuration and the 
-      // the new meta types. It hsould be updated to be anything that is 
-      // untemplated and not 'other'
-      const contextTypes = Object.keys(typeMap).filter(type => type !== 'other');
-      
+      const response = await this.fsHelper.getProjectConfig(args.projectName);
+      if (!response.success || !response.config) {
+        return { content: [{ type: 'text', text: `Failed to load project configuration.` }] };
+      }
+      const contextTypes = response
+        .config
+        .contextTypes
+        .filter(type => type.template)
+        .map(ct => ct.name);
+
       const templates: Record<string, string> = {};
       
       // Retrieve each template iteratively

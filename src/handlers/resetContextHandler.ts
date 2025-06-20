@@ -5,7 +5,7 @@ import { ContentItem } from '../types';
 interface ResetContextArgs {
   projectName: string;
   contextType: string;
-  contextName?: string; // For 'other' type files
+  contextName?: string;
 }
 
 class ResetContextHandler {

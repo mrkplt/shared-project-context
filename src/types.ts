@@ -50,16 +50,18 @@ export interface PersistenceResponse {
    success: boolean;
    data?: string[];
    errors?: string[];
+   config?: ProjectConfig;
 }
 
 export interface PersistenceHelper {
    listProjects(): Promise<PersistenceResponse>;
    initProject(projectName: string): Promise<PersistenceResponse>;
-   listAllContextForProject(projectName: string): Promise<PersistenceResponse>;
+   listAllContextForType(projectName: string, contextType: string): Promise<PersistenceResponse>;
    writeContext(projectName: string, contextType: string, contextName: string, content: string): Promise<PersistenceResponse>
    getContext(projectName: string, contextType: string, contextName: string[]): Promise<PersistenceResponse>;
    archiveContext(projectName: string, contextType: string, contextName: string[]): Promise<PersistenceResponse>;
    getTemplate(projectName: string, contextType: string): Promise<PersistenceResponse>;
+   getProjectConfig(projectName: string): Promise<PersistenceResponse>;
 }
 
 // Configuration system types

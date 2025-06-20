@@ -38,56 +38,56 @@ export class FileSystemHelper implements PersistenceHelper {
       return { success: false, errors: [errorMessage] };
     }
   }
-
-  async listAllContextForProject(projectName: string): Promise<PersistenceResponse> {
-    const projectPath = await this.getProjectPath(projectName);
-    if (!(await this.fileExists(projectPath))) {
+  
+  async getContext(projectName: string, contextType: string, contextNames?: string[]): Promise<PersistenceResponse> {
+    const response = await this.getProjectConfig(projectName);
+    if (!response.success || !response.config) {
+      return { success: false, errors: [`Failed to load project configuration.`] };
+    }
+    const config = response.config;
+    const contextTypeConfig = config.contextTypes.find(ct => ct.name === contextType);
+    
+    if (!contextTypeConfig) {
+      return { success: false, errors: [`Context type '${contextType}' not found in project configuration`] };
+    }
+    
+    if (!await this.projectExists(projectName)) {
       return {success: false, errors: [`Project '${projectName}' does not exist. Create it first using create_project.`]};
     }
 
-    try {
-      const config = await this.getProjectConfig(projectName);
-      const contextTypeNames = config.contextTypes.map(ct => ct.name);
-      
-      const entries = await Promise.all(contextTypeNames.map(async typeName => {
-        const contextTypePath = path.join(projectPath, typeName);
-        await this.ensureDirectoryExists(contextTypePath);
-        return await this.readDirectory(contextTypePath, { withFileTypes: true, recursive: true }) as Dirent[];
-      }))
-
-      return { success: true, data: await this.onlyContextNamesFromDirectory(entries.flat()) }
-    } catch (error) {
-      const errorMessage = ( error instanceof Error ? error.message : 'Unknown error');
-      return { success: false, errors: [errorMessage] };
-    }
-  }
-
-  async getContext(projectName: string, contextType: string, contextNames: string[]): Promise<PersistenceResponse> {
     const projectPath = await this.getProjectPath(projectName);
     if (!(await this.fileExists(projectPath))) {
       return {success: false, errors: [`Project '${projectName}' does not exist. Create it first using create_project.`]};
     }
 
     await this.ensureDirectoryExists(path.join(projectPath, contextType));
-
+    // If the contextNames are specified, then return the specified contexts.
+    // If the contextNames are not specified, then return all contexts for
+    // the specified context type.
+    // yes, derive context names gets all the files paths, and then renders 
+    // them into context names, then yes, it then goes and rebuilds all those 
+    // paths to retrieve the contents
     try {
-      const config = await this.getProjectConfig(projectName);
-      const contextTypeConfig = config.contextTypes.find(ct => ct.name === contextType);
-      
-      if (!contextTypeConfig) {
-        return { success: false, errors: [`Context type '${contextType}' not found in project configuration`] };
-      }
 
-      const filePathPromises = contextNames.map(name => 
+      const response = await this.listAllContextForType(projectName, contextType)
+      if (!response.success || !response.data) {
+        return { success: false, errors: response.errors } 
+      }
+      const workingContextNames = contextNames 
+      ? contextNames
+      : response.data
+
+      const filePathPromises = workingContextNames.map(name => 
         this.getContextFilePath(projectName, contextType, name)
       );
+      
       const filePaths = await Promise.all(filePathPromises);
       
       // Read all files concurrently
       const fileReadPromises = filePaths.map(async (filePath, index) => {
         try {
           const content = await fs.readFile(filePath, 'utf-8');
-          return { content, error: null, name: contextNames[index] };
+          return { content, error: null, name: workingContextNames[index] || filePath.split('/').pop() };
         } catch (error) {
           if (
             error instanceof Error 
@@ -97,13 +97,13 @@ export class FileSystemHelper implements PersistenceHelper {
             const shouldReturnEmpty = this.shouldReturnEmptyForMissingFile(contextTypeConfig);
             
             if (shouldReturnEmpty) {
-              return { content: '', error: null, name: contextNames[index] };
+              return { content: '', error: null, name: workingContextNames[index] };
             } else {
-              return { content: null, error: 'Context not found. Have you created it using create_context yet?', name: contextNames[index] };
+              return { content: null, error: 'Context not found. Have you created it using create_context yet?', name: workingContextNames[index] };
             }
           }
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          return { content: null, error: errorMessage, name: contextNames[index] };
+          return { content: null, error: errorMessage, name: workingContextNames[index] };
         }
       });
       
@@ -142,7 +142,11 @@ export class FileSystemHelper implements PersistenceHelper {
     await this.ensureDirectoryExists(path.join(projectPath, contextType));
     
     try {
-      const config = await this.getProjectConfig(projectName);
+      const response = await this.getProjectConfig(projectName);
+      if (!response.success || !response.config) {
+        return { success: false, errors: [`Failed to load project configuration.`] };
+      }
+      const config = response.config;
       const contextTypeConfig = config.contextTypes.find(ct => ct.name === contextType);
       
       if (!contextTypeConfig) {
@@ -166,7 +170,12 @@ export class FileSystemHelper implements PersistenceHelper {
 
   async getTemplate(projectName: string, contextType: string): Promise<PersistenceResponse> {
     try {
-      const config = await this.getProjectConfig(projectName);
+      const response = await this.getProjectConfig(projectName);
+      if (!response.success || !response.config) {
+        return { success: false, errors: [`Failed to load project configuration.`] };
+      }
+
+      const config = response.config;
       const contextTypeConfig = config.contextTypes.find(ct => ct.name === contextType);
       
       if (!contextTypeConfig) {
@@ -220,7 +229,22 @@ export class FileSystemHelper implements PersistenceHelper {
     }
   }
 
-  async archiveContext(projectName: string, contextType: string, contextNames: string[]): Promise<PersistenceResponse> {
+  async archiveContext(projectName: string, contextType: string, contextNames?: string[]): Promise<PersistenceResponse> {
+    const response = await this.getProjectConfig(projectName);
+    if (!response.success || !response.config) {
+      return { success: false, errors: [`Failed to load project configuration.`] };
+    }
+    const config = response.config;
+    const contextTypeConfig = config.contextTypes.find(ct => ct.name === contextType);
+    
+    if (!contextTypeConfig) {
+      return { success: false, errors: [`Context type '${contextType}' not found in project configuration`] };
+    }
+    
+    if (!await this.projectExists(projectName)) {
+      return {success: false, errors: [`Project '${projectName}' does not exist. Create it first using create_project.`]};
+    }
+
     const projectPath = await this.getProjectPath(projectName);
     if (!(await this.fileExists(projectPath))) {
       return {success: false, errors: [`Project '${projectName}' does not exist. Create it first using create_project.`]};
@@ -229,15 +253,23 @@ export class FileSystemHelper implements PersistenceHelper {
     await this.ensureDirectoryExists(path.join(projectPath, 'archive', contextType));
 
     try {
-      const projectPath = await this.getProjectPath(projectName);
       const timestamp = this.timestamp();
       const archiveDir = path.join(projectPath, 'archive', contextType, timestamp);
       
       // Ensure the archive directory exists
       await this.ensureDirectoryExists(archiveDir);
-      
+      const response = await this.listAllContextForType(projectName, contextType)
+     
+      if (!response.success || !response.data) {
+        return { success: false, errors: response.errors } 
+      }
+
+      const workingContextNames = contextNames 
+      ? contextNames
+      : response.data
+
       // Process each context name
-      const movePromises = contextNames.map(async (contextName) => {
+      const movePromises = workingContextNames.map(async (contextName) => {
         try {
           // Get the source file path
           const sourceFilePath = await this.getContextFilePath(projectName, contextType, contextName);
@@ -282,6 +314,38 @@ export class FileSystemHelper implements PersistenceHelper {
     }
   }
 
+  async getProjectConfig(projectName: string): Promise<PersistenceResponse> {
+    // Check cache first
+    if (this.configCache.has(projectName)) {
+      return { success: true, config: this.configCache.get(projectName) };
+    }
+
+    const projectPath = await this.getProjectPath(projectName);
+    const configPath = path.join(projectPath, 'context-config.json');
+    
+    let config: ProjectConfig;
+    
+    try {
+      const configContent = await fs.readFile(configPath, 'utf-8');
+      config = JSON.parse(configContent);
+    } catch (error) {
+      // Return default configuration if config file doesn't exist
+      config = this.getDefaultConfig();
+    }
+    
+    // Cache the configuration
+    this.configCache.set(projectName, config);
+    return { success: true, config: config };
+  }
+
+  async listAllContextForType(projectName: string, contextType: string): Promise<PersistenceResponse> {
+    const contextTypePath = path.join(await this.getProjectPath(projectName), contextType);
+    await this.ensureDirectoryExists(contextTypePath);
+    
+    const dirEntries = await this.readDirectory(contextTypePath, { withFileTypes: true, recursive: true }) as Dirent[];
+    return { success: true, data: await this.onlyContextNamesFromDirectory(dirEntries) }
+  }
+
   private async readDirectory(dirPath: string, options: { withFileTypes: boolean, recursive?: boolean } = { withFileTypes: true }): Promise<string[] | Dirent[]> {
     try {
       const entries = await fs.readdir(dirPath, { ...options, withFileTypes: true });
@@ -295,7 +359,7 @@ export class FileSystemHelper implements PersistenceHelper {
       throw error;
     }
   }
-  
+
   private async ensureDirectoryExists(directory: string): Promise<void> {
     try {
       await fs.access(directory);
@@ -324,9 +388,18 @@ export class FileSystemHelper implements PersistenceHelper {
     return path.join(this.contextRoot, 'projects', projectName);
   }
 
+  private async projectExists(projectName: string): Promise<boolean> {
+    const projectPath = await this.getProjectPath(projectName);
+    return this.fileExists(projectPath);
+  }
+
   private async getContextFilePath(projectName: string, contextType: string, contextName?: string): Promise<string> {
     const projectPath = await this.getProjectPath(projectName);
-    const config = await this.getProjectConfig(projectName);
+    const response = await this.getProjectConfig(projectName);
+    if (!response.success || !response.config) {
+      throw new Error(`Failed to load project configuration.`);
+    }
+    const config = response.config;
     const contextTypeConfig = config.contextTypes.find(ct => ct.name === contextType);
     
     if (!contextTypeConfig) {
@@ -360,30 +433,6 @@ export class FileSystemHelper implements PersistenceHelper {
 
   private generateTimestampedContextName(contextType: string): string {
     return `${contextType}-${this.timestamp()}`;
-  }
-
-  private async getProjectConfig(projectName: string): Promise<ProjectConfig> {
-    // Check cache first
-    if (this.configCache.has(projectName)) {
-      return this.configCache.get(projectName)!;
-    }
-
-    const projectPath = await this.getProjectPath(projectName);
-    const configPath = path.join(projectPath, 'context-config.json');
-    
-    let config: ProjectConfig;
-    
-    try {
-      const configContent = await fs.readFile(configPath, 'utf-8');
-      config = JSON.parse(configContent);
-    } catch (error) {
-      // Return default configuration if config file doesn't exist
-      config = this.getDefaultConfig();
-    }
-    
-    // Cache the configuration
-    this.configCache.set(projectName, config);
-    return config;
   }
 
   // Helper method to determine missing file behavior based on config
