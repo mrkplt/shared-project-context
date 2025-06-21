@@ -5,6 +5,7 @@ import fs from 'fs/promises';
 import { PersistenceHelper, ProjectConfig, TypeConfig } from '../../../types.js';
 import { PersistenceResponse } from '../../../types.js';
 import { DateTime } from 'luxon';
+import { file } from 'zod/v4';
 
 export class FileSystemHelper implements PersistenceHelper {
   contextRoot: string;
@@ -64,30 +65,24 @@ export class FileSystemHelper implements PersistenceHelper {
     // If the contextNames are specified, then return the specified contexts.
     // If the contextNames are not specified, then return all contexts for
     // the specified context type.
-    // yes, derive context names gets all the files paths, and then renders 
-    // them into context names, then yes, it then goes and rebuilds all those 
-    // paths to retrieve the contents
+
     try {
 
-      const response = await this.listAllContextForType(projectName, contextType)
-      if (!response.success || !response.data) {
-        return { success: false, errors: response.errors } 
+      let filePaths;
+      if (contextNames) {
+        const filePathPromises = contextNames.map(name => 
+          this.buildContextFilePath(projectName, contextType, name)
+        );
+        filePaths = await Promise.all(filePathPromises);
+      } else {
+        filePaths = (await this.listPathsForType(projectName, contextType)).map(dirent => path.join(dirent.parentPath, dirent.name));
       }
-      const workingContextNames = contextNames 
-      ? contextNames
-      : response.data
 
-      const filePathPromises = workingContextNames.map(name => 
-        this.getContextFilePath(projectName, contextType, name)
-      );
-      
-      const filePaths = await Promise.all(filePathPromises);
-      
       // Read all files concurrently
       const fileReadPromises = filePaths.map(async (filePath, index) => {
         try {
           const content = await fs.readFile(filePath, 'utf-8');
-          return { content, error: null, name: workingContextNames[index] || filePath.split('/').pop() };
+          return { content, error: null, name: filePath.split('/').pop() };
         } catch (error) {
           if (
             error instanceof Error 
@@ -97,13 +92,13 @@ export class FileSystemHelper implements PersistenceHelper {
             const shouldReturnEmpty = this.shouldReturnEmptyForMissingFile(contextTypeConfig);
             
             if (shouldReturnEmpty) {
-              return { content: '', error: null, name: workingContextNames[index] };
+              return { content: '', error: null, name: contextTypeConfig.name };
             } else {
-              return { content: null, error: 'Context not found. Have you created it using create_context yet?', name: workingContextNames[index] };
+              return { content: null, error: 'Context not found. Have you created it using create_context yet?', name: contextTypeConfig.name };
             }
           }
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          return { content: null, error: errorMessage, name: workingContextNames[index] };
+          return { content: null, error: errorMessage, name: filePaths[index].split('/').pop() };
         }
       });
       
@@ -157,7 +152,7 @@ export class FileSystemHelper implements PersistenceHelper {
         ? this.generateTimestampedContextName(contextName) 
         : contextName;
      
-      const filePath = await this.getContextFilePath(projectName, contextType, fileName);
+      const filePath = await this.buildContextFilePath(projectName, contextType, fileName);
       
       await fs.writeFile(filePath, content);
 
@@ -272,7 +267,7 @@ export class FileSystemHelper implements PersistenceHelper {
       const movePromises = workingContextNames.map(async (contextName) => {
         try {
           // Get the source file path
-          const sourceFilePath = await this.getContextFilePath(projectName, contextType, contextName);
+          const sourceFilePath = await this.buildContextFilePath(projectName, contextType, contextName);
           
           if (!(await this.fileExists(sourceFilePath))) {
             return { success: true, name: contextName };
@@ -360,9 +355,6 @@ export class FileSystemHelper implements PersistenceHelper {
 }
 
   async listAllContextForType(projectName: string, contextType: string): Promise<PersistenceResponse> {
-    const contextTypePath = path.join(await this.getProjectPath(projectName), contextType);
-    await this.ensureDirectoryExists(contextTypePath);
-    
     // Get the config to check the base type
     const configResponse = await this.getProjectConfig(projectName);
     if (!configResponse.success || !configResponse.config) {
@@ -374,10 +366,11 @@ export class FileSystemHelper implements PersistenceHelper {
       return { success: false, errors: [`Context type '${contextType}' not found in project configuration`] };
     }
     
+   const filePaths = await this.listPathsForType(projectName, contextType);
+
     // For collection types, return the list of context names from the directory
-    if (contextTypeConfig.baseType.endsWith('-collection')) {
-      const dirEntries = await this.readDirectory(contextTypePath, { withFileTypes: true, recursive: true }) as Dirent[];
-      return { success: true, data: await this.onlyContextNamesFromDirectory(dirEntries) };
+    if (contextTypeConfig.baseType.endsWith('-collection') || contextTypeConfig.baseType.endsWith('-log')) {
+      return { success: true, data: await this.onlyContextNamesFromDirectory(filePaths) };
     }
     
     // For non-collection types, return just the context type name
@@ -431,7 +424,7 @@ export class FileSystemHelper implements PersistenceHelper {
     return this.fileExists(projectPath);
   }
 
-  private async getContextFilePath(projectName: string, contextType: string, contextName?: string): Promise<string> {
+  private async buildContextFilePath(projectName: string, contextType: string, contextName?: string): Promise<string> {
     const projectPath = await this.getProjectPath(projectName);
     const response = await this.getProjectConfig(projectName);
     if (!response.success || !response.config) {
@@ -526,4 +519,11 @@ export class FileSystemHelper implements PersistenceHelper {
       ]
     };
   }
+
+  private async listPathsForType(projectName: string, contextType: string): Promise<Dirent[]> {
+    const contextTypePath = path.join(await this.getProjectPath(projectName), contextType);
+     await this.ensureDirectoryExists(contextTypePath);
+     return await this.readDirectory(contextTypePath, { withFileTypes: true, recursive: true }) as Dirent[];
+  }
+  
 }
