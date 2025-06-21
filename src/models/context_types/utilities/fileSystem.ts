@@ -363,8 +363,25 @@ export class FileSystemHelper implements PersistenceHelper {
     const contextTypePath = path.join(await this.getProjectPath(projectName), contextType);
     await this.ensureDirectoryExists(contextTypePath);
     
-    const dirEntries = await this.readDirectory(contextTypePath, { withFileTypes: true, recursive: true }) as Dirent[];
-    return { success: true, data: await this.onlyContextNamesFromDirectory(dirEntries) }
+    // Get the config to check the base type
+    const configResponse = await this.getProjectConfig(projectName);
+    if (!configResponse.success || !configResponse.config) {
+      return { success: false, errors: ['Failed to load project configuration'] };
+    }
+    
+    const contextTypeConfig = configResponse.config.contextTypes.find(ct => ct.name === contextType);
+    if (!contextTypeConfig) {
+      return { success: false, errors: [`Context type '${contextType}' not found in project configuration`] };
+    }
+    
+    // For collection types, return the list of context names from the directory
+    if (contextTypeConfig.baseType.endsWith('-collection')) {
+      const dirEntries = await this.readDirectory(contextTypePath, { withFileTypes: true, recursive: true }) as Dirent[];
+      return { success: true, data: await this.onlyContextNamesFromDirectory(dirEntries) };
+    }
+    
+    // For non-collection types, return just the context type name
+    return { success: true, data: [contextType] };
   }
 
   private async readDirectory(dirPath: string, options: { withFileTypes: boolean, recursive?: boolean } = { withFileTypes: true }): Promise<string[] | Dirent[]> {
@@ -473,11 +490,38 @@ export class FileSystemHelper implements PersistenceHelper {
   private getDefaultConfig(): ProjectConfig {
     return {
       contextTypes: [
+        // {
+        //   baseType: 'freeform-document-collection',
+        //   name: 'general',
+        //   description: 'Arbitrary named files for reference documents. No template required. Use get_context("general", "filename") to read and update_context("general", content, "filename") to create or update files.',
+        //   validation: false
+        // }
         {
-          baseType: 'freeform-document-collection',
-          name: 'general',
-          description: 'Arbitrary named files for reference documents. No template required. Use get_context("general", "filename") to read and update_context("general", content, "filename") to create or update files.',
-          validation: false
+          "baseType": "templated-log",
+          "name": "session_summary",
+          "description": "Append-only log of development sessions. Each entry is timestamped and follows the session_summary template. Use get_context(\"session_summary\") to read all entries chronologically, and update_context(\"session_summary\", content) to append a new entry.",
+          "template": "session_summary",
+          "validation": true
+        },
+        {
+          "baseType": "templated-single-document",
+          "name": "mental_model",
+          "description": "Single document tracking current technical architecture understanding. Replaces on update. Must follow the mental_model template. Use get_context(\"mental_model\") to read and update_context(\"mental_model\", content) to replace.",
+          "template": "mental_model",
+          "validation": true
+        },
+        {
+          "baseType": "templated-document-collection",
+          "name": "features",
+          "description": "A collection of documents tracking implementation status. Must follow the features template. Use get_context(\"features\", \"featurename\") to read and update_context(\"features\", \"featurename\", content) to replace.",
+          "template": "features",
+          "validation": true
+        },
+        {
+          "baseType": "freeform-document-collection",
+          "name": "other",
+          "description": "Arbitrary named contexts for reference materials. No template required. Use get_context(\"other\", \"filename\") to read and update_context(\"other\", content, \"filename\") to create or update files.",
+          "validation": false
         }
       ]
     };

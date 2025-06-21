@@ -43,7 +43,7 @@ class ListContextsHandler {
           }
           
           if (contextNamesResponse.data.length > 0) {
-            output += `\nExisting files: ${contextNamesResponse.data.join(', ')}\n`;
+            output += `\nExisting contexts: ${contextNamesResponse.data.join(', ')}\n`;
           }
           
           output += '\n';

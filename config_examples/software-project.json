@@ -15,16 +15,16 @@
       "validation": true
     },
     {
-      "baseType": "templated-single-document",
+      "baseType": "templated-document-collection",
       "name": "features",
-      "description": "Single document tracking implementation status. Replaces on update. Must follow the features template. Use get_context(\"features\") to read and update_context(\"features\", content) to replace.",
+      "description": "A collection of documents tracking implementation status. Must follow the features template. Use get_context(\"features\", \"featurename\") to read and update_context(\"features\", \"featurename\", content) to replace.",
       "template": "features",
       "validation": true
     },
     {
       "baseType": "freeform-document-collection",
       "name": "other",
-      "description": "Arbitrary named files for reference documents. No template required. Use get_context(\"other\", \"filename\") to read and update_context(\"other\", content, \"filename\") to create or update files.",
+      "description": "Arbitrary named contexts for reference materials. No template required. Use get_context(\"other\", \"filename\") to read and update_context(\"other\", content, \"filename\") to create or update files.",
       "validation": false
     }
   ]
