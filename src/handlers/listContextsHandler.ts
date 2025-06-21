@@ -24,12 +24,10 @@ class ListContextsHandler {
       }
 
       const { config } = response;
-      let output = '# Available Context Types for This Project\n\n';
+      const output = {} as Record<string, { description: string; contexts: string[] }>;
       
       // Process each context type
-      for (const typeConfig of config.contextTypes) {
-        output += `## ${typeConfig.name}\n${typeConfig.description}\n`;
-        
+      for (const typeConfig of config.contextTypes) {        
         try {
           // Get context names for this type
           const contextNamesResponse = await this.persistenceHelper.listAllContextForType(
@@ -38,25 +36,34 @@ class ListContextsHandler {
           );
 
           if (!contextNamesResponse.success || !contextNamesResponse.data) {
-            output += `\nError listing contexts: ${contextNamesResponse.errors?.join(', ')}\n\n`;
-            continue;
+            return {
+              content: [
+                { type: 'text', text: 'ListContextsHandler: Failed to list contexts.' },
+                { type: 'text', text: contextNamesResponse.errors?.join(', ') || 'Unknown error' },
+              ]
+            };
           }
           
-          if (contextNamesResponse.data.length > 0) {
-            output += `\nExisting contexts: ${contextNamesResponse.data.join(', ')}\n`;
-          }
+          output[typeConfig.name] = {
+            description: typeConfig.description,
+            contexts: contextNamesResponse.data
+          };
           
-          output += '\n';
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          output += `\nError listing contexts: ${errorMessage}\n\n`;
+          return {
+            content: [
+              { type: 'text', text: 'ListContextsHandler: Failed to list contexts.' },
+              { type: 'text', text: errorMessage },
+            ]
+          };
         }
       }
       
       return {
         content: [{
           type: 'text',
-          text: output
+          text: JSON.stringify(output)
         }]
       };
     } catch (error) {
