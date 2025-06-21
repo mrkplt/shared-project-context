@@ -153,7 +153,7 @@ export class FileSystemHelper implements PersistenceHelper {
         return { success: false, errors: [`Context type '${contextType}' not found in project configuration`] };
       }
 
-      const fileName = contextTypeConfig.fileNaming === 'timestamped'
+      const fileName = (contextTypeConfig.baseType === 'templated-log' || contextTypeConfig.baseType === 'freeform-log')
         ? this.generateTimestampedContextName(contextName) 
         : contextName;
      
@@ -429,14 +429,19 @@ export class FileSystemHelper implements PersistenceHelper {
     
     await this.ensureDirectoryExists(path.join(projectPath, contextType));
     
-    switch (contextTypeConfig.fileNaming) {
-      case 'timestamped':
-      case 'named':
-        return path.join(projectPath, contextType, `${contextName}.md`);
-      case 'single':
+    switch (contextTypeConfig.baseType) {
+      case 'templated-single-document':
+      case 'freeform-single-document':
         return path.join(projectPath, contextType, `${contextType}.md`);
+      case 'templated-document-collection':
+      case 'freeform-document-collection':
+        return path.join(projectPath, contextType, `${contextName}.md`);
+      case 'templated-log':
+      case 'freeform-log':
+        const timestampedName = this.generateTimestampedContextName(contextType);
+        return path.join(projectPath, contextType, `${timestampedName}.md`);
       default:
-        throw new Error(`Invalid fileNaming type: ${contextTypeConfig.fileNaming}`);
+        throw new Error(`Invalid baseType: ${contextTypeConfig.baseType}`);
     }
   }
 
@@ -460,17 +465,18 @@ export class FileSystemHelper implements PersistenceHelper {
   private shouldReturnEmptyForMissingFile(contextTypeConfig: TypeConfig): boolean {
     // Templated types (both log and document) should return empty for missing files
     // Freeform types should return error for missing files
-    return contextTypeConfig.baseType === 'templated-log' || contextTypeConfig.baseType === 'templated-document';
+    return contextTypeConfig.baseType === 'templated-log' || 
+           contextTypeConfig.baseType === 'templated-single-document' ||
+           contextTypeConfig.baseType === 'templated-document-collection';
   }
 
   private getDefaultConfig(): ProjectConfig {
     return {
       contextTypes: [
         {
-          baseType: 'freeform-document',
+          baseType: 'freeform-document-collection',
           name: 'general',
           description: 'Arbitrary named files for reference documents. No template required. Use get_context("general", "filename") to read and update_context("general", content, "filename") to create or update files.',
-          fileNaming: 'named',
           validation: false
         }
       ]

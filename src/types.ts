@@ -66,11 +66,12 @@ export interface PersistenceHelper {
 
 // Configuration system types
 export interface TypeConfig {
-  baseType: 'templated-document' | 'freeform-document' | 'templated-log' | 'log';
+  baseType: 'templated-single-document' | 'freeform-single-document' | 
+           'templated-document-collection' | 'freeform-document-collection' |
+           'templated-log' | 'freeform-log';
   name: string;
   description: string;
   template?: string;
-  fileNaming?: 'single' | 'timestamped' | 'named';
   validation?: boolean;
 }
 

@@ -1,7 +1,7 @@
 import { ContexTypeResponse } from '../../types.js';
 import { BaseContextType } from './baseContextType.js';
 
-export class FreeformDocumentType extends BaseContextType {
+export class TemplatedDocumentCollection extends BaseContextType {
   async update(): Promise<ContexTypeResponse> {
     if (!this.content) {
       return {
