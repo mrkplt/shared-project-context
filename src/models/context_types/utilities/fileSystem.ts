@@ -485,45 +485,11 @@ export class FileSystemHelper implements PersistenceHelper {
     return {
         "contextTypes": [
           {
-            "baseType": "templated-log",
-            "name": "session_summary",
-            "description": "Append-only log of development sessions. Each entry is timestamped and follows the session_summary template. Use get_context(\"session_summary\") to read all entries chronologically, and update_context(\"session_summary\", content) to append a new entry.",
-            "template": "session_summary",
-            "validation": true
-          },
-          {
-            "baseType": "templated-single-document",
-            "name": "mental_model",
-            "description": "Single document tracking current technical architecture understanding. Replaces on update. Must follow the mental_model template. Use get_context(\"mental_model\") to read and update_context(\"mental_model\", content) to replace.",
-            "template": "mental_model",
-            "validation": true
-          },
-          {
-            "baseType": "templated-document-collection",
-            "name": "features",
-            "description": "A collection of contexts tracking implementation status. Must follow the features template. Use get_context(\"features\", \"featurename\") to read and update_context(\"features\", \"featurename\", content) to replace.",
-            "template": "features",
-            "validation": true
-          },
-          {
             "baseType": "freeform-document-collection",
-            "name": "other",
+            "name": "general",
             "description": "A collection of arbitrary named contexts with no required template. Each document is stored separately and can be retrieved individually. Use get_context(\"other\", \"filename\") to read and update_context(\"other\", content, \"filename\") to create or update files.",
             "validation": false
-          },
-          {
-            "baseType": "freeform-log",
-            "name": "dev_log",
-            "description": "A chronological log of development activities. Entries are appended in sequence with timestamps. Use get_context(\"dev_log\") to read the full log and update_context(\"dev_log\", content) to append new entries.",
-            "validation": false
-          },
-          {
-            "baseType": "freeform-single-document",
-            "name": "start_here",
-            "description": "A single document for project onboarding and getting started information. The entire content is replaced on each update. Use get_context(\"start_here\") to read and update_context(\"start_here\", content) to update the document.",
-            "validation": false
           }
-        ] 
     };
   }
 
