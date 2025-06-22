@@ -490,6 +490,7 @@ export class FileSystemHelper implements PersistenceHelper {
             "description": "A collection of arbitrary named contexts with no required template. Each document is stored separately and can be retrieved individually. Use get_context(\"other\", \"filename\") to read and update_context(\"other\", content, \"filename\") to create or update files.",
             "validation": false
           }
+        ]
     };
   }
 
