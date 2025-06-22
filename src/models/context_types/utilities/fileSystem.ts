@@ -5,7 +5,6 @@ import fs from 'fs/promises';
 import { PersistenceHelper, ProjectConfig, TypeConfig } from '../../../types.js';
 import { PersistenceResponse } from '../../../types.js';
 import { DateTime } from 'luxon';
-import { file } from 'zod/v4';
 
 export class FileSystemHelper implements PersistenceHelper {
   contextRoot: string;
@@ -253,39 +252,41 @@ export class FileSystemHelper implements PersistenceHelper {
       
       // Ensure the archive directory exists
       await this.ensureDirectoryExists(archiveDir);
-      const response = await this.listAllContextForType(projectName, contextType)
-     
-      if (!response.success || !response.data) {
-        return { success: false, errors: response.errors } 
+
+      // Follow same pattern as getContext for finding files to archive
+      let filePaths;
+      if (contextNames) {
+        // Specific context names provided - use buildContextFilePath for each
+        const filePathPromises = contextNames.map(name => 
+          this.buildContextFilePath(projectName, contextType, name)
+        );
+        filePaths = await Promise.all(filePathPromises);
+      } else {
+        // No specific names - get all file paths directly (like getContext does)
+        const dirEntries = await this.listPathsForType(projectName, contextType);
+        filePaths = dirEntries.map(dirent => path.join(dirent.parentPath, dirent.name));
       }
 
-      const workingContextNames = contextNames 
-      ? contextNames
-      : response.data
-
-      // Process each context name
-      const movePromises = workingContextNames.map(async (contextName) => {
+      // Process each file path
+      const movePromises = filePaths.map(async (filePath) => {
         try {
-          // Get the source file path
-          const sourceFilePath = await this.buildContextFilePath(projectName, contextType, contextName);
-          
-          if (!(await this.fileExists(sourceFilePath))) {
-            return { success: true, name: contextName };
+          if (!(await this.fileExists(filePath))) {
+            return { success: true, name: path.basename(filePath) };
           }
 
           // Get the filename from the source path
-          const fileName = path.basename(sourceFilePath);
+          const fileName = path.basename(filePath);
           
           // Create destination path in archive directory
           const destinationPath = path.join(archiveDir, fileName);
           
           // Move the file to archive
-          await fs.rename(sourceFilePath, destinationPath);
+          await fs.rename(filePath, destinationPath);
           
           return { success: true };
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          return { success: false, name: contextName, error: errorMessage };
+          return { success: false, name: path.basename(filePath), error: errorMessage };
         }
       });
       
@@ -482,14 +483,47 @@ export class FileSystemHelper implements PersistenceHelper {
 
   private getDefaultConfig(): ProjectConfig {
     return {
-      contextTypes: [
-        {
-          baseType: 'freeform-document-collection',
-          name: 'general',
-          description: 'Arbitrary named files for reference documents. No template required. Use get_context("general", "filename") to read and update_context("general", content, "filename") to create or update files.',
-          validation: false
-        } 
-      ]
+        "contextTypes": [
+          {
+            "baseType": "templated-log",
+            "name": "session_summary",
+            "description": "Append-only log of development sessions. Each entry is timestamped and follows the session_summary template. Use get_context(\"session_summary\") to read all entries chronologically, and update_context(\"session_summary\", content) to append a new entry.",
+            "template": "session_summary",
+            "validation": true
+          },
+          {
+            "baseType": "templated-single-document",
+            "name": "mental_model",
+            "description": "Single document tracking current technical architecture understanding. Replaces on update. Must follow the mental_model template. Use get_context(\"mental_model\") to read and update_context(\"mental_model\", content) to replace.",
+            "template": "mental_model",
+            "validation": true
+          },
+          {
+            "baseType": "templated-document-collection",
+            "name": "features",
+            "description": "A collection of contexts tracking implementation status. Must follow the features template. Use get_context(\"features\", \"featurename\") to read and update_context(\"features\", \"featurename\", content) to replace.",
+            "template": "features",
+            "validation": true
+          },
+          {
+            "baseType": "freeform-document-collection",
+            "name": "other",
+            "description": "A collection of arbitrary named contexts with no required template. Each document is stored separately and can be retrieved individually. Use get_context(\"other\", \"filename\") to read and update_context(\"other\", content, \"filename\") to create or update files.",
+            "validation": false
+          },
+          {
+            "baseType": "freeform-log",
+            "name": "dev_log",
+            "description": "A chronological log of development activities. Entries are appended in sequence with timestamps. Use get_context(\"dev_log\") to read the full log and update_context(\"dev_log\", content) to append new entries.",
+            "validation": false
+          },
+          {
+            "baseType": "freeform-single-document",
+            "name": "start_here",
+            "description": "A single document for project onboarding and getting started information. The entire content is replaced on each update. Use get_context(\"start_here\") to read and update_context(\"start_here\", content) to update the document.",
+            "validation": false
+          }
+        ] 
     };
   }
 
