@@ -64,30 +64,24 @@ export class FileSystemHelper implements PersistenceHelper {
     // If the contextNames are specified, then return the specified contexts.
     // If the contextNames are not specified, then return all contexts for
     // the specified context type.
-    // yes, derive context names gets all the files paths, and then renders 
-    // them into context names, then yes, it then goes and rebuilds all those 
-    // paths to retrieve the contents
+
     try {
 
-      const response = await this.listAllContextForType(projectName, contextType)
-      if (!response.success || !response.data) {
-        return { success: false, errors: response.errors } 
+      let filePaths;
+      if (contextNames) {
+        const filePathPromises = contextNames.map(name => 
+          this.buildContextFilePath(projectName, contextType, name)
+        );
+        filePaths = await Promise.all(filePathPromises);
+      } else {
+        filePaths = (await this.listPathsForType(projectName, contextType)).map(dirent => path.join(dirent.parentPath, dirent.name));
       }
-      const workingContextNames = contextNames 
-      ? contextNames
-      : response.data
 
-      const filePathPromises = workingContextNames.map(name => 
-        this.getContextFilePath(projectName, contextType, name)
-      );
-      
-      const filePaths = await Promise.all(filePathPromises);
-      
       // Read all files concurrently
       const fileReadPromises = filePaths.map(async (filePath, index) => {
         try {
           const content = await fs.readFile(filePath, 'utf-8');
-          return { content, error: null, name: workingContextNames[index] || filePath.split('/').pop() };
+          return { content, error: null, name: filePath.split('/').pop() };
         } catch (error) {
           if (
             error instanceof Error 
@@ -97,13 +91,13 @@ export class FileSystemHelper implements PersistenceHelper {
             const shouldReturnEmpty = this.shouldReturnEmptyForMissingFile(contextTypeConfig);
             
             if (shouldReturnEmpty) {
-              return { content: '', error: null, name: workingContextNames[index] };
+              return { content: '', error: null, name: contextTypeConfig.name };
             } else {
-              return { content: null, error: 'Context not found. Have you created it using create_context yet?', name: workingContextNames[index] };
+              return { content: null, error: 'Context not found. Have you created it using create_context yet?', name: contextTypeConfig.name };
             }
           }
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          return { content: null, error: errorMessage, name: workingContextNames[index] };
+          return { content: null, error: errorMessage, name: filePaths[index].split('/').pop() };
         }
       });
       
@@ -153,11 +147,11 @@ export class FileSystemHelper implements PersistenceHelper {
         return { success: false, errors: [`Context type '${contextType}' not found in project configuration`] };
       }
 
-      const fileName = contextTypeConfig.fileNaming === 'timestamped'
+      const fileName = (contextTypeConfig.baseType === 'templated-log' || contextTypeConfig.baseType === 'freeform-log')
         ? this.generateTimestampedContextName(contextName) 
         : contextName;
      
-      const filePath = await this.getContextFilePath(projectName, contextType, fileName);
+      const filePath = await this.buildContextFilePath(projectName, contextType, fileName);
       
       await fs.writeFile(filePath, content);
 
@@ -258,39 +252,41 @@ export class FileSystemHelper implements PersistenceHelper {
       
       // Ensure the archive directory exists
       await this.ensureDirectoryExists(archiveDir);
-      const response = await this.listAllContextForType(projectName, contextType)
-     
-      if (!response.success || !response.data) {
-        return { success: false, errors: response.errors } 
+
+      // Follow same pattern as getContext for finding files to archive
+      let filePaths;
+      if (contextNames) {
+        // Specific context names provided - use buildContextFilePath for each
+        const filePathPromises = contextNames.map(name => 
+          this.buildContextFilePath(projectName, contextType, name)
+        );
+        filePaths = await Promise.all(filePathPromises);
+      } else {
+        // No specific names - get all file paths directly (like getContext does)
+        const dirEntries = await this.listPathsForType(projectName, contextType);
+        filePaths = dirEntries.map(dirent => path.join(dirent.parentPath, dirent.name));
       }
 
-      const workingContextNames = contextNames 
-      ? contextNames
-      : response.data
-
-      // Process each context name
-      const movePromises = workingContextNames.map(async (contextName) => {
+      // Process each file path
+      const movePromises = filePaths.map(async (filePath) => {
         try {
-          // Get the source file path
-          const sourceFilePath = await this.getContextFilePath(projectName, contextType, contextName);
-          
-          if (!(await this.fileExists(sourceFilePath))) {
-            return { success: true, name: contextName };
+          if (!(await this.fileExists(filePath))) {
+            return { success: true, name: path.basename(filePath) };
           }
 
           // Get the filename from the source path
-          const fileName = path.basename(sourceFilePath);
+          const fileName = path.basename(filePath);
           
           // Create destination path in archive directory
           const destinationPath = path.join(archiveDir, fileName);
           
           // Move the file to archive
-          await fs.rename(sourceFilePath, destinationPath);
+          await fs.rename(filePath, destinationPath);
           
           return { success: true };
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          return { success: false, name: contextName, error: errorMessage };
+          return { success: false, name: path.basename(filePath), error: errorMessage };
         }
       });
       
@@ -360,11 +356,26 @@ export class FileSystemHelper implements PersistenceHelper {
 }
 
   async listAllContextForType(projectName: string, contextType: string): Promise<PersistenceResponse> {
-    const contextTypePath = path.join(await this.getProjectPath(projectName), contextType);
-    await this.ensureDirectoryExists(contextTypePath);
+    // Get the config to check the base type
+    const configResponse = await this.getProjectConfig(projectName);
+    if (!configResponse.success || !configResponse.config) {
+      return { success: false, errors: ['Failed to load project configuration'] };
+    }
     
-    const dirEntries = await this.readDirectory(contextTypePath, { withFileTypes: true, recursive: true }) as Dirent[];
-    return { success: true, data: await this.onlyContextNamesFromDirectory(dirEntries) }
+    const contextTypeConfig = configResponse.config.contextTypes.find(ct => ct.name === contextType);
+    if (!contextTypeConfig) {
+      return { success: false, errors: [`Context type '${contextType}' not found in project configuration`] };
+    }
+    
+   const filePaths = await this.listPathsForType(projectName, contextType);
+
+    // For collection types, return the list of context names from the directory
+    if (contextTypeConfig.baseType.endsWith('-collection') || contextTypeConfig.baseType.endsWith('-log')) {
+      return { success: true, data: await this.onlyContextNamesFromDirectory(filePaths) };
+    }
+    
+    // For non-collection types, return just the context type name
+    return { success: true, data: [contextType] };
   }
 
   private async readDirectory(dirPath: string, options: { withFileTypes: boolean, recursive?: boolean } = { withFileTypes: true }): Promise<string[] | Dirent[]> {
@@ -414,7 +425,7 @@ export class FileSystemHelper implements PersistenceHelper {
     return this.fileExists(projectPath);
   }
 
-  private async getContextFilePath(projectName: string, contextType: string, contextName?: string): Promise<string> {
+  private async buildContextFilePath(projectName: string, contextType: string, contextName?: string): Promise<string> {
     const projectPath = await this.getProjectPath(projectName);
     const response = await this.getProjectConfig(projectName);
     if (!response.success || !response.config) {
@@ -429,14 +440,19 @@ export class FileSystemHelper implements PersistenceHelper {
     
     await this.ensureDirectoryExists(path.join(projectPath, contextType));
     
-    switch (contextTypeConfig.fileNaming) {
-      case 'timestamped':
-      case 'named':
-        return path.join(projectPath, contextType, `${contextName}.md`);
-      case 'single':
+    switch (contextTypeConfig.baseType) {
+      case 'templated-single-document':
+      case 'freeform-single-document':
         return path.join(projectPath, contextType, `${contextType}.md`);
+      case 'templated-document-collection':
+      case 'freeform-document-collection':
+        return path.join(projectPath, contextType, `${contextName}.md`);
+      case 'templated-log':
+      case 'freeform-log':
+        const timestampedName = this.generateTimestampedContextName(contextType);
+        return path.join(projectPath, contextType, `${timestampedName}.md`);
       default:
-        throw new Error(`Invalid fileNaming type: ${contextTypeConfig.fileNaming}`);
+        throw new Error(`Invalid baseType: ${contextTypeConfig.baseType}`);
     }
   }
 
@@ -460,20 +476,28 @@ export class FileSystemHelper implements PersistenceHelper {
   private shouldReturnEmptyForMissingFile(contextTypeConfig: TypeConfig): boolean {
     // Templated types (both log and document) should return empty for missing files
     // Freeform types should return error for missing files
-    return contextTypeConfig.baseType === 'templated-log' || contextTypeConfig.baseType === 'templated-document';
+    return contextTypeConfig.baseType === 'templated-log' || 
+           contextTypeConfig.baseType === 'templated-single-document' ||
+           contextTypeConfig.baseType === 'templated-document-collection';
   }
 
   private getDefaultConfig(): ProjectConfig {
     return {
-      contextTypes: [
-        {
-          baseType: 'freeform-document',
-          name: 'general',
-          description: 'Arbitrary named files for reference documents. No template required. Use get_context("general", "filename") to read and update_context("general", content, "filename") to create or update files.',
-          fileNaming: 'named',
-          validation: false
-        }
-      ]
+        "contextTypes": [
+          {
+            "baseType": "freeform-document-collection",
+            "name": "general",
+            "description": "A collection of arbitrary named contexts with no required template. Each document is stored separately and can be retrieved individually. Use get_context(\"other\", \"filename\") to read and update_context(\"other\", content, \"filename\") to create or update files.",
+            "validation": false
+          }
+        ]
     };
   }
+
+  private async listPathsForType(projectName: string, contextType: string): Promise<Dirent[]> {
+    const contextTypePath = path.join(await this.getProjectPath(projectName), contextType);
+     await this.ensureDirectoryExists(contextTypePath);
+     return await this.readDirectory(contextTypePath, { withFileTypes: true, recursive: true }) as Dirent[];
+  }
+  
 }

@@ -1,7 +1,9 @@
-import { TemplatedDocumentType } from './context_types/templatedDocumentType.js';
-import { FreeformDocumentType } from './context_types/freeformDocumentType.js';
-import { TemplatedLogType } from './context_types/templatedLogType.js';
-import { LogType } from './context_types/freeformLogType.js';
+import { TemplatedSingleDocument } from './context_types/templatedSingleDocument.js';
+import { FreeformSingleDocument } from './context_types/freeformSingleDocument.js';
+import { TemplatedDocumentCollection } from './context_types/templatedDocumentCollection.js';
+import { FreeformDocumentCollection } from './context_types/freeformDocumentCollection.js';
+import { TemplatedLog } from './context_types/templatedLog.js';
+import { FreeformLog } from './context_types/freeformLog.js';
 import { FileSystemHelper } from './context_types/utilities/fileSystem.js';
 import { ContextType, ContextTypeArgs, TypeConfig } from '../types.js';
 
@@ -16,10 +18,12 @@ interface ContextTypeFactoryArgs {
 type BaseContextTypeConstructor = new (args: ContextTypeArgs, config: TypeConfig) => ContextType;
 
 const baseTypeMap = new Map<string, BaseContextTypeConstructor>([
-    ['templated-document', TemplatedDocumentType as BaseContextTypeConstructor],
-    ['freeform-document', FreeformDocumentType  as BaseContextTypeConstructor],
-    ['templated-log', TemplatedLogType  as BaseContextTypeConstructor],
-    ['log', LogType  as BaseContextTypeConstructor]
+    ['templated-single-document', TemplatedSingleDocument as BaseContextTypeConstructor],
+    ['freeform-single-document', FreeformSingleDocument as BaseContextTypeConstructor],
+    ['templated-document-collection', TemplatedDocumentCollection as BaseContextTypeConstructor],
+    ['freeform-document-collection', FreeformDocumentCollection as BaseContextTypeConstructor],
+    ['templated-log', TemplatedLog as BaseContextTypeConstructor],
+    ['freeform-log', FreeformLog as BaseContextTypeConstructor]
 ]);
 
 export default async function contextTypeFactory(args: ContextTypeFactoryArgs): Promise<ContextType> {

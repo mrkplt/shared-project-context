@@ -1,7 +1,7 @@
 import { ContexTypeResponse } from '../../types.js';
-import { BaseContextType } from './baseContextType';
+import { BaseContextType } from './baseContextType.js';
 
-export class TemplatedDocumentType extends BaseContextType {
+export class TemplatedSingleDocument extends BaseContextType {
   async update(): Promise<ContexTypeResponse> {
     if (!this.content) {
       return {
@@ -10,7 +10,7 @@ export class TemplatedDocumentType extends BaseContextType {
       };
     }
 
-    // For templated documents, reset first then write (replace behavior)
+    // For templated single documents, reset first then write (replace behavior)
     const resetResult = await this.reset();
     if (!resetResult.success) {
       return {

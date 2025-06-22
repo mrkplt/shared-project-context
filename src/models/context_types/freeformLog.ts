@@ -1,7 +1,7 @@
 import { ContexTypeResponse } from '../../types.js';
 import { BaseContextType } from './baseContextType.js';
 
-export class TemplatedLogType extends BaseContextType {
+export class FreeformLog extends BaseContextType {
   async update(): Promise<ContexTypeResponse> {
     if (!this.content) {
       return {
@@ -10,7 +10,7 @@ export class TemplatedLogType extends BaseContextType {
       };
     }
 
-    // For templated logs, append with timestamp (no reset)
+    // For freeform logs, append with timestamp (no reset)
     const result = await this.persistenceHelper.writeContext(
       this.projectName,
       this.config.name,
