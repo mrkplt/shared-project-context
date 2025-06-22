@@ -27,8 +27,35 @@ export abstract class BaseContextType implements ContextType {
   abstract reset(): Promise<ContexTypeResponse>;
   
   async validate(): Promise<ValidationResponse> {
-    if (!this.config.validation || !this.validator || !this.config.template) {
+    if (!this.config.validation) {
       return { isValid: true };
+    }
+    
+    if (!this.config.template) {
+      return {
+        isValid: false,
+        validationErrors: [{
+          type: 'content_error',
+          message: 'Validation enabled but no template specified in configuration'
+        }],
+        correctionGuidance: [
+          'Set validation: false to disable validation',
+          'Or specify template: "template-name" to enable validation'
+        ]
+      };
+    }
+    
+    if (!this.validator) {
+      return {
+        isValid: false,
+        validationErrors: [{
+          type: 'content_error',
+          message: 'Validation system not properly initialized'
+        }],
+        correctionGuidance: [
+          'Check that both validation and template are properly configured'
+        ]
+      };
     }
     
     const trimmedContent = this.content?.trim() || '';
