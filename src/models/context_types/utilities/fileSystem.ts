@@ -18,6 +18,15 @@ export class FileSystemHelper implements PersistenceHelper {
 
   async initProject(projectName: string): Promise<PersistenceResponse> {
     try {
+      // Check if project already exists
+      if (await this.projectExists(projectName)) {
+        return { 
+          success: false, 
+          errors: [`Project '${projectName}' already exists.`] 
+        };
+      }
+      
+      // Create project directory
       await this.ensureDirectoryExists(
         await this.getProjectPath(projectName)
       );

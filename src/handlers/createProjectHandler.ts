@@ -12,7 +12,15 @@ class CreateProjectHandler {
 
   async handle(args: {projectName: string}): Promise<{ content: ContentItem[] }> {
     try {
-      await this.persistenceHelper.initProject(args.projectName);
+      const result = await this.persistenceHelper.initProject(args.projectName);
+      if (!result.success) {
+        return {
+          content: [{
+            type: 'text',
+            text: result.errors?.join('\n') || 'An unknown error occurred'
+          }]
+        };
+      }
       return {
         content: [{
           type: 'text',
