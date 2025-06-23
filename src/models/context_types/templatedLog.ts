@@ -35,7 +35,7 @@ export class TemplatedLog extends BaseContextType {
   }
 
   async reset(): Promise<ContexTypeResponse> {
-    const result = await this.persistenceHelper.archiveContext(
+    const result = await this.persistenceHelper.clearContext(
       this.projectName,
       this.config.name
     );

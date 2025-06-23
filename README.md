@@ -112,12 +112,12 @@ await executeTool('update_context', {
 });
 ```
 
-#### reset_context
+#### clear_context
 
 Clear context (with archiving for safety).
 
 ```typescript
-await executeTool('reset_context', {
+await executeTool('clear_context', {
   project_name: 'my-project',
   context_type: 'session_summary'
 });

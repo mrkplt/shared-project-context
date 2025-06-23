@@ -56,7 +56,7 @@ export class TemplatedDocumentCollection extends BaseContextType {
       };
     }
 
-    const result = await this.persistenceHelper.archiveContext(
+    const result = await this.persistenceHelper.clearContext(
       this.projectName,
       this.config.name,
       [this.contextName]

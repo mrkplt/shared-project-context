@@ -223,7 +223,10 @@ export class FileSystemHelper implements PersistenceHelper {
     }
   }
 
-  async archiveContext(projectName: string, contextType: string, contextNames?: string[]): Promise<PersistenceResponse> {
+  // This actually implements archiving though the intention from a user perspective is that
+  // the context is removed. It is named clearContext to because not all persistence methods
+  // implement archiving.
+  async clearContext(projectName: string, contextType: string, contextNames?: string[]): Promise<PersistenceResponse> {
     const response = await this.getProjectConfig(projectName);
     if (!response.success || !response.config) {
       return { success: false, errors: [`archiveContext: Failed to load project configuration.`] };

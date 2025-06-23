@@ -11,7 +11,7 @@ import GetContextHandler from './handlers/getContextHandler';
 import UpdateContextHandler from './handlers/updateContextHandler';
 import CreateProjectHandler from './handlers/createProjectHandler';
 import { FileSystemHelper } from './models/context_types/utilities/fileSystem';
-import ResetContextHandler from './handlers/resetContextHandler';
+import ClearContextHandler from './handlers/clearContextHandler';
 import GetProjectTemplatesHandler from './handlers/getProjectTemplatesHandler';
 
 // Main server class that implements the MCP protocol
@@ -23,7 +23,7 @@ class ContextManagerServer {
   private getContextHandler!: GetContextHandler;
   private updateContextHandler!: UpdateContextHandler;
   private createProjectHandler!: CreateProjectHandler;
-  private resetContextHandler!: ResetContextHandler;
+  private clearContextHandler!: ClearContextHandler;
   private getProjectTemplatesHandler!: GetProjectTemplatesHandler;
 
   constructor() {
@@ -35,7 +35,7 @@ class ContextManagerServer {
     this.createProjectHandler = new CreateProjectHandler(this.persistenceHelper);
     this.getContextHandler = new GetContextHandler(this.persistenceHelper);
     this.updateContextHandler = new UpdateContextHandler(this.persistenceHelper);
-    this.resetContextHandler = new ResetContextHandler(this.persistenceHelper);
+    this.clearContextHandler = new ClearContextHandler(this.persistenceHelper);
     this.getProjectTemplatesHandler = new GetProjectTemplatesHandler(this.persistenceHelper);
     
     // TODO: indicate that further instruction about how to use the contexts is available somehwere and make it dynamic
@@ -43,23 +43,16 @@ class ContextManagerServer {
       {
         name: 'shared-project-context',
         version: '1.0.0',
-        description: `This server stores shared context exclusively for AI assistants.
+        description: `This server helps AI assistants maintain shared context across conversations and sessions.
+Contexts is organized into projects, with each project containing its own context files. Use contexts to store important information that helps you or other AI assistants quickly understand previous discussions and maintain continuity. Keep contexts concise and focused on the most relevant details.
+The server supports different types of contexts, each with its own behavior and requirements. You'll discover what's available when you explore the contexts for your chosen project.
 
-Contexts are saved into into projects, and each project has its own context files.
-Contexts are used for storing important information between sessions and for you or other AI assistants to quickly come up to date on previous discussions.
-Contexts should be kept concise and focused.
-All contexts except "other" follow must follow a prescribed template and will be validated.
+Getting started workflow:
 
-This server manages four context types, each with distinct behaviors:
-- session_summary: Chronological log of the development session activity. AVOID code samples! Always appends new context.
-- mental_model: Technical architecture understanding
-- features: A list of features, their implementation status and other relevant information
-- other: The "other" type is a catch-all for individually named arbitrary contexts.
-
-You should refresh your context if some time has passed since you last used this server.
-
-When working with this server, start by listing projects, then list contexts for your project to see what information is already available.
-Call the project_templates tool before updating context to retrieve the required template for the context type you are updating.`,
+List available projects to see what already exists
+Show the options to the user and ask them which project to work with
+List the contexts within that project to understand what information is already stored
+Before updating any context, call the project templates tool to get the required format for that context type`,
       },
       {
         capabilities: {
@@ -87,7 +80,7 @@ Call the project_templates tool before updating context to retrieve the required
         },
         {
           name: 'list_contexts',
-          description: 'Discover what contexts exist for a specific project. Use this after selecting a project to see what information is already stored (mental_model, session_summary, features, etc.) before reading or updating context. This shows you what context types are available so you can retrieve relevant information.',
+          description: 'Discover what contexts exist for a specific project. Use this after selecting a project to see what information is already stored before getting or updating context.',
           inputSchema: {
             type: 'object',
             properties: {
@@ -98,7 +91,7 @@ Call the project_templates tool before updating context to retrieve the required
         },
         {
           name: 'create_project',
-          description: 'Create a project to store context in. Project names are one or more words separated by hyphens. For example, "my-project" or "my-project-2".',
+          description: 'Create a project to store context in. Project names are one or more words separated by hyphens. For example, "my-project" or "my-project-2". Use this when no suitable existing project is available for your current work.',
           inputSchema: {
             type: 'object',
             properties: {
@@ -122,7 +115,7 @@ Call the project_templates tool before updating context to retrieve the required
         },
         {
           name: 'update_context',
-          description: 'Update context for a project with information that will be stored for future AI assistant sessions. The update behavior depends on context type: session_summary always appends new context, mental_model and features will replace all existing context of that type, the "other" type requires a "context_name" parameter and will alwyas overwrite if a context with that name already exists. Always use get_context before to make sure you have all the context before updating.',
+          description: 'Update context for a project with information that will be stored for future AI assistant sessions.  Always use get_context first to make sure you do not lose important existing context before updating. Call get_project_templates next to retrieve the required format for the context type you\'re updating. Some context types may require specifying a context_name.',
           inputSchema: {
             type: 'object',
             properties: {
@@ -135,8 +128,8 @@ Call the project_templates tool before updating context to retrieve the required
           }
         },
         {
-          name: 'reset_context',
-          description: 'Caution! Reset a context_type in a project for a fresh start. Context_name is required for the "other" context_type. Always use list_context_types first to see what context files are available for the project.',
+          name: 'clear_context',
+          description: 'Caution! Clear a context_type in a project for a fresh start. Context_name may be required. Use list_contexts first to see what contexts are available for the project.',
           inputSchema: {
             type: 'object',
             properties: {
@@ -149,7 +142,7 @@ Call the project_templates tool before updating context to retrieve the required
         },
         {
           name: 'get_project_templates',
-          description: 'Retrieve the project templates for a project. contexts must be formatted according to the appropriate template in order to update successfully.',
+          description: 'Retrieve the project templates for a project. Contexts must be formatted according to the appropriate template in order to update successfully. Call this after listing contexts but before updating any context to ensure you have the proper formatting requirements.',
           inputSchema: {
             type: 'object',
             properties: {
@@ -196,8 +189,8 @@ Call the project_templates tool before updating context to retrieve the required
                 projectName: args.project_name as string
               });
 
-            case 'reset_context':
-              return await this.resetContextHandler.handle({
+            case 'clear_context':
+              return await this.clearContextHandler.handle({
                 projectName: args.project_name as string,
                 contextType: args.context_type as string,
                 contextName: args.context_name as string
