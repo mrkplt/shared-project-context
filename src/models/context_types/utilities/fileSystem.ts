@@ -200,7 +200,7 @@ export class FileSystemHelper implements PersistenceHelper {
       } catch (projectError) {
         // Project template doesn't exist, initialize it from repository default
         try {
-          const repositoryRoot = path.resolve(__dirname, '../../../..');
+          const repositoryRoot = path.resolve(process.cwd());
           const defaultTemplatePath = path.join(repositoryRoot, 'templates', `${templateName}.md`);
           
           // Read the repository default template
@@ -471,6 +471,7 @@ export class FileSystemHelper implements PersistenceHelper {
   private async onlyContextNamesFromDirectory(entries: Dirent[]): Promise<string[]> {
     return entries
       .filter(entry => entry.isFile())
+      .filter(entry => entry.name.endsWith('.md'))
       .map(entry => entry.name.split('.')[0].split('/').pop())
       .filter((name): name is string => name !== undefined && name !== '');
   }
