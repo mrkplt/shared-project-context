@@ -35,23 +35,22 @@ describe('FileSystemHelper.listProjects', () => {
     expect(result.data).toEqual([]);
   });
 
-  test('creates contextRoot but fails if projects directory does not exist', async () => {
+  test('creates projects directory if missing and returns empty array', async () => {
     // The contextRoot (tempDir) already exists from mkdtemp, but projects directory doesn't
     const projectsDir = path.join(tempDir, 'projects');
     await expect(fs.access(projectsDir)).rejects.toThrow();
     
-    // The method creates contextRoot but fails because projects directory doesn't exist
+    // The method creates the projects directory and succeeds
     const result = await fileSystemHelper.listProjects();
-    expect(result.success).toBe(false);
-    expect(result.errors).toHaveLength(1);
-    expect(result.errors[0]).toContain('Directory not found');
+    expect(result.success).toBe(true);
+    expect(result.data).toEqual([]);
     
-    // ContextRoot should still exist (it was created)
+    // Both contextRoot and projects directory should exist
     const contextRootStats = await fs.stat(tempDir);
     expect(contextRootStats.isDirectory()).toBe(true);
     
-    // But projects directory should still not exist
-    await expect(fs.access(projectsDir)).rejects.toThrow();
+    const projectsStats = await fs.stat(projectsDir);
+    expect(projectsStats.isDirectory()).toBe(true);
   });
 
   test('returns list of existing project directories', async () => {

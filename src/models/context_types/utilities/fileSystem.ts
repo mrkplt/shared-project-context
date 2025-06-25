@@ -39,7 +39,7 @@ export class FileSystemHelper implements PersistenceHelper {
 
   async listProjects(): Promise< PersistenceResponse > {
     try {
-      await this.ensureDirectoryExists(this.contextRoot);
+      await this.ensureDirectoryExists(path.join(this.contextRoot, 'projects'))
       const entries = await this.readDirectory( path.join(this.contextRoot, 'projects'), { withFileTypes: true }) as Dirent[];
       return { success: true, data: entries.filter(entry => entry.isDirectory()).map(entry => entry.name) };
     } catch (error) {

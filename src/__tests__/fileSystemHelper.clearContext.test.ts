@@ -338,35 +338,35 @@ describe('FileSystemHelper.clearContext', () => {
       expect(remainingFiles).toEqual([]);
     });
 
-    test('log types with specific context names create new timestamped archive paths', async () => {
+    test('log types with specific context names only archive matching files', async () => {
       const contextType = 'session-log';
       
       // Write one log entry
       await fileSystemHelper.writeContext(projectName, contextType, 'session', 'Log entry');
       
-      // Try to archive with specific context name - this will try to create new timestamped path
+      // Try to archive with different context name - should not archive the existing file
       const result = await fileSystemHelper.clearContext(
         projectName,
         contextType,
-        ['session-entry']
+        ['session-entry']  // Different name than what was written
       );
       
       // This should succeed (the clearContext method doesn't fail for missing files)
       expect(result.success).toBe(true);
       
-      // The existing log file should be archived because clearContext follows the same
-      // file resolution pattern as getContext, which creates new timestamped paths for log types
+      // The existing log file should remain because we archived a different context name
       const contextDir = path.join(tempDir, 'projects', projectName, contextType);
       const remainingFiles = await fs.readdir(contextDir);
-      expect(remainingFiles).toHaveLength(0); // All files archived
+      expect(remainingFiles).toHaveLength(1); // Original file still there
+      expect(remainingFiles[0]).toMatch(/^session-log-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\.md$/);
       
-      // Check that archive was created
+      // Check that archive was created but empty (since no matching file was found)
       const archiveDir = path.join(tempDir, 'projects', projectName, 'archive', contextType);
       const timestampedDirs = await fs.readdir(archiveDir);
       expect(timestampedDirs).toHaveLength(1);
       
       const archivedFiles = await fs.readdir(path.join(archiveDir, timestampedDirs[0]));
-      expect(archivedFiles).toHaveLength(1); // The timestamped log file that was created
+      expect(archivedFiles).toHaveLength(0); // No files archived since names didn't match
     });
   });
 
