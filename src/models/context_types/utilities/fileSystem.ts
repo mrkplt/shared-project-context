@@ -96,14 +96,7 @@ export class FileSystemHelper implements PersistenceHelper {
             error instanceof Error 
             && (error as NodeJS.ErrnoException).code === 'ENOENT'
           ) {
-            // Use configuration to determine missing file behavior
-            const shouldReturnEmpty = this.shouldReturnEmptyForMissingFile(contextTypeConfig);
-            
-            if (shouldReturnEmpty) {
-              return { content: '', error: null, name: contextTypeConfig.name };
-            } else {
-              return { content: null, error: 'Context not found. Have you created it using create_context yet?', name: contextTypeConfig.name };
-            }
+            return { content: null, error: 'Context not found. Have you created it using create_context yet?', name: contextTypeConfig.name };
           }
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
           return { content: null, error: errorMessage, name: filePaths[index].split('/').pop() };
@@ -483,15 +476,6 @@ export class FileSystemHelper implements PersistenceHelper {
 
   private generateTimestampedContextName(contextType: string): string {
     return `${contextType}-${this.timestamp()}`;
-  }
-
-  // Helper method to determine missing file behavior based on config
-  private shouldReturnEmptyForMissingFile(contextTypeConfig: TypeConfig): boolean {
-    // Templated types (both log and document) should return empty for missing files
-    // Freeform types should return error for missing files
-    return contextTypeConfig.baseType === 'templated-log' || 
-           contextTypeConfig.baseType === 'templated-single-document' ||
-           contextTypeConfig.baseType === 'templated-document-collection';
   }
 
   private getDefaultConfig(): ProjectConfig {
