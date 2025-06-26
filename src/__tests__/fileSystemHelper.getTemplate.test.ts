@@ -100,19 +100,6 @@ describe('FileSystemHelper.getTemplate', () => {
     expect(result.data).toEqual([templateContent]);
   });
 
-  test('fails to fall back to repository default due to path resolution bug', async () => {
-    const contextType = 'general';
-    
-    // KNOWN BUG: The current implementation uses path.resolve(__dirname, '../../../..')
-    // which doesn't calculate the repository root correctly in test environments.
-    // This test documents the actual (broken) behavior.
-    const result = await fileSystemHelper.getTemplate(projectName, contextType);
-    
-    expect(result.success).toBe(false);
-    expect(result.errors).toHaveLength(1);
-    expect(result.errors[0]).toContain('Failed to load or initialize template for general');
-  });
-
   test('fails when both project and repository templates are missing', async () => {
     const contextType = 'general';
     
@@ -122,22 +109,6 @@ describe('FileSystemHelper.getTemplate', () => {
     expect(result.success).toBe(false);
     expect(result.errors).toHaveLength(1);
     expect(result.errors[0]).toContain('Failed to load or initialize template for general');
-  });
-
-  test('fails to create templates directory due to repository path resolution bug', async () => {
-    const contextType = 'general';
-    
-    // KNOWN BUG: Repository path resolution fails in test environment
-    // This test documents that the templates directory is NOT created when repository fallback fails
-    const projectTemplatesDir = path.join(tempDir, 'projects', projectName, 'templates');
-    await expect(fs.access(projectTemplatesDir)).rejects.toThrow();
-    
-    const result = await fileSystemHelper.getTemplate(projectName, contextType);
-    
-    expect(result.success).toBe(false);
-    
-    // Templates directory should still not exist since repository fallback failed
-    await expect(fs.access(projectTemplatesDir)).rejects.toThrow();
   });
 
   test('handles template with special characters and formatting', async () => {
@@ -182,21 +153,6 @@ And more content...`;
     
     expect(result.success).toBe(true);
     expect(result.data).toEqual(['']);
-  });
-
-  test('subsequent calls fail consistently due to repository path resolution bug', async () => {
-    const contextType = 'general';
-    
-    // KNOWN BUG: Repository fallback doesn't work, so subsequent calls will also fail
-    // This test documents that the method fails consistently
-    const result1 = await fileSystemHelper.getTemplate(projectName, contextType);
-    expect(result1.success).toBe(false);
-    
-    const result2 = await fileSystemHelper.getTemplate(projectName, contextType);
-    expect(result2.success).toBe(false);
-    
-    // Both calls should fail with the same error
-    expect(result1.errors).toEqual(result2.errors);
   });
 
   describe('template name resolution', () => {

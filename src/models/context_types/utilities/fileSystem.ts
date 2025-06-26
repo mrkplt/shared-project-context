@@ -268,7 +268,7 @@ export class FileSystemHelper implements PersistenceHelper {
       // Follow same pattern as getContext for finding files to archive
       let filePaths;
       if (contextNames) {
-        // Specific context names provided - use buildContextFilePath for each
+        // TODO: This might be broken. Specific context names provided - use buildContextFilePath for each
         const filePathPromises = contextNames.map(name => 
           this.buildContextFilePath(projectName, contextType, name)
         );

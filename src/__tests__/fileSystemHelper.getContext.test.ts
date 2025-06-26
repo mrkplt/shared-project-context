@@ -242,6 +242,7 @@ describe('FileSystemHelper.getContext', () => {
     test('log types with specific context names create new timestamped files', async () => {
       const contextType = 'session-log';
       
+      // TODO: I do not think this is real.
       // For log types, specifying context names in getContext actually tries to create new timestamped files
       // This is probably not the intended behavior but documents current reality
       const result = await fileSystemHelper.getContext(
@@ -250,6 +251,7 @@ describe('FileSystemHelper.getContext', () => {
         ['session-entry']
       );
       
+      // TODO: This does not fail.
       // This will fail because buildContextFilePath creates a new timestamped name that doesn't exist
       expect(result.success).toBe(false);
       expect(result.errors).toHaveLength(1);
