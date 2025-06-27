@@ -137,17 +137,17 @@ describe('FileSystemHelper.listAllContextForType', () => {
       await fs.writeFile(configPath, JSON.stringify(customConfig, null, 2));
     });
 
-    test('returns empty array when no log entries exist', async () => {
+    test('returns context type name when no log entries exist', async () => {
       const result = await fileSystemHelper.listAllContextForType(
         projectName,
         'session-log'
       );
       
       expect(result.success).toBe(true);
-      expect(result.data).toEqual([]);
+      expect(result.data).toEqual(['session-log']);
     });
 
-    test('returns timestamped context names for freeform-log', async () => {
+    test('returns context type name for freeform-log even with entries', async () => {
       const contextType = 'session-log';
       
       // Write multiple log entries
@@ -160,15 +160,11 @@ describe('FileSystemHelper.listAllContextForType', () => {
       const result = await fileSystemHelper.listAllContextForType(projectName, contextType);
       
       expect(result.success).toBe(true);
-      expect(result.data).toHaveLength(3);
-      
-      // All entries should follow the timestamped naming pattern
-      result.data!.forEach(name => {
-        expect(name).toMatch(/^session-log-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z$/);
-      });
+      // Log types are an abstraction - we only return the context type name, not individual files
+      expect(result.data).toEqual(['session-log']);
     });
 
-    test('returns timestamped context names for templated-log', async () => {
+    test('returns context type name for templated-log even with entries', async () => {
       const contextType = 'templated-log';
       
       // Write multiple log entries
@@ -179,12 +175,8 @@ describe('FileSystemHelper.listAllContextForType', () => {
       const result = await fileSystemHelper.listAllContextForType(projectName, contextType);
       
       expect(result.success).toBe(true);
-      expect(result.data).toHaveLength(2);
-      
-      // All entries should follow the timestamped naming pattern
-      result.data!.forEach(name => {
-        expect(name).toMatch(/^templated-log-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z$/);
-      });
+      // Log types are an abstraction - we only return the context type name, not individual files
+      expect(result.data).toEqual(['templated-log']);
     });
   });
 

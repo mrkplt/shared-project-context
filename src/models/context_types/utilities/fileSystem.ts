@@ -375,11 +375,12 @@ export class FileSystemHelper implements PersistenceHelper {
    const filePaths = await this.listPathsForType(projectName, contextType);
 
     // For collection types, return the list of context names from the directory
-    if (contextTypeConfig.baseType.endsWith('-collection') || contextTypeConfig.baseType.endsWith('-log')) {
+    if (contextTypeConfig.baseType.endsWith('-collection')) {
       return { success: true, data: await this.onlyContextNamesFromDirectory(filePaths) };
     }
     
-    // For non-collection types, return just the context type name
+    // For single-document and log types, return just the context type name
+    // Log types are an abstraction - we don't expose individual timestamped files
     return { success: true, data: [contextType] };
   }
 
