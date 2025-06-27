@@ -2,6 +2,7 @@
   "name": "shared-project-context",
   "version": "0.6-pre",
   "description": "MCP Server for managing AI agent context with validation and correction guidance",
+  "type": "module",
   "main": "dist/index.js",
   "bin": {
     "shared-project-context": "dist/server.js"
@@ -10,6 +11,7 @@
     "dist"
   ],
   "scripts": {
+    "clean": "rm -rf dist",
     "build": "tsc",
     "start": "node dist/server.js",
     "dev": "tsx watch --clear-screen=false src/server.ts",
@@ -30,6 +32,9 @@
   ],
   "author": "",
   "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  },
   "dependencies": {
     "@modelcontextprotocol/inspector": "^0.13.0",
     "@modelcontextprotocol/sdk": "^1.12.0",

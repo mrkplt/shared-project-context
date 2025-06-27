@@ -5,14 +5,14 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
 // Import handlers
-import ListProjectsHandler from './handlers/listProjectsHandler';
-import ListContextsHandler from './handlers/listContextsHandler';
-import GetContextHandler from './handlers/getContextHandler';
-import UpdateContextHandler from './handlers/updateContextHandler';
-import CreateProjectHandler from './handlers/createProjectHandler';
-import { FileSystemHelper } from './models/context_types/utilities/fileSystem';
-import ClearContextHandler from './handlers/clearContextHandler';
-import GetProjectTemplatesHandler from './handlers/getProjectTemplatesHandler';
+import ListProjectsHandler from './handlers/listProjectsHandler.js';
+import ListContextsHandler from './handlers/listContextsHandler.js';
+import GetContextHandler from './handlers/getContextHandler.js';
+import UpdateContextHandler from './handlers/updateContextHandler.js';
+import CreateProjectHandler from './handlers/createProjectHandler.js';
+import { FileSystemHelper } from './models/context_types/utilities/fileSystem.js';
+import ClearContextHandler from './handlers/clearContextHandler.js';
+import GetProjectTemplatesHandler from './handlers/getProjectTemplatesHandler.js';
 
 // Main server class that implements the MCP protocol
 class ContextManagerServer {
@@ -248,7 +248,14 @@ Before updating any context, call the project templates tool to get the required
 }
 
 // Start the server when this file is run directly
-if (require.main === module) {
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Check if this module is the main module
+if (import.meta.url === `file://${process.argv[1]}`) {
   const server = new ContextManagerServer();
   server.start().catch(error => {
     console.error('Failed to start server:', error);

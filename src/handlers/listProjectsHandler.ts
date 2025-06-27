@@ -1,4 +1,4 @@
-import { FileSystemHelper } from '../models/context_types/utilities/fileSystem';
+import { FileSystemHelper } from '../models/context_types/utilities/fileSystem.js';
 
 interface ContentItem {
   type: string;

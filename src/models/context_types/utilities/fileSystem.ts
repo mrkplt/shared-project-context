@@ -118,7 +118,7 @@ export class FileSystemHelper implements PersistenceHelper {
       // Sort results by name and extract content
       const sortedResults = results
         .filter(result => result.content !== null)
-        .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+        .sort((a, b) => (b.name || '').localeCompare(a.name || ''))
       
       const data = sortedResults.map(result => result.content!);
       
