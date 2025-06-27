@@ -118,6 +118,7 @@ export class FileSystemHelper implements PersistenceHelper {
       // Sort results by name and extract content
       const sortedResults = results
         .filter(result => result.content !== null)
+        .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
       
       const data = sortedResults.map(result => result.content!);
       
@@ -261,11 +262,26 @@ export class FileSystemHelper implements PersistenceHelper {
       // Follow same pattern as getContext for finding files to archive
       let filePaths;
       if (contextNames) {
-        // TODO: This might be broken. Specific context names provided - use buildContextFilePath for each
-        const filePathPromises = contextNames.map(name => 
-          this.buildContextFilePath(projectName, contextType, name)
-        );
-        filePaths = await Promise.all(filePathPromises);
+        // For log types, we need to find existing files that match the context name prefix
+        // For other types, use buildContextFilePath
+        if (contextTypeConfig.baseType === 'templated-log' || contextTypeConfig.baseType === 'freeform-log') {
+          // Get all existing files and filter by context name prefix
+          const dirEntries = await this.listPathsForType(projectName, contextType);
+          filePaths = dirEntries
+            .filter(dirent => {
+              // Check if any of the provided context names match the file prefix
+              return contextNames.some(contextName => 
+                dirent.name.startsWith(`${contextName}-`)
+              );
+            })
+            .map(dirent => path.join(dirent.parentPath, dirent.name));
+        } else {
+          // For non-log types, use buildContextFilePath as before
+          const filePathPromises = contextNames.map(name => 
+            this.buildContextFilePath(projectName, contextType, name)
+          );
+          filePaths = await Promise.all(filePathPromises);
+        }
       } else {
         // No specific names - get all file paths directly (like getContext does)
         const dirEntries = await this.listPathsForType(projectName, contextType);
@@ -462,7 +478,7 @@ export class FileSystemHelper implements PersistenceHelper {
     }
   }
 
-  private async onlyContextNamesFromDirectory(entries: Dirent[]): Promise<string[]> {
+  private async onlyContextNamesFromDirectory(entries: { name: string; parentPath: string; isFile: () => boolean }[]): Promise<string[]> {
     return entries
       .filter(entry => entry.isFile())
       .filter(entry => entry.name.endsWith('.md'))
@@ -492,10 +508,15 @@ export class FileSystemHelper implements PersistenceHelper {
     };
   }
 
-  private async listPathsForType(projectName: string, contextType: string): Promise<Dirent[]> {
+  private async listPathsForType(projectName: string, contextType: string): Promise<{ name: string; parentPath: string; isFile: () => boolean }[]> {
     const contextTypePath = path.join(await this.getProjectPath(projectName), contextType);
-     await this.ensureDirectoryExists(contextTypePath);
-     return await this.readDirectory(contextTypePath, { withFileTypes: true, recursive: true }) as Dirent[];
+    await this.ensureDirectoryExists(contextTypePath);
+    const entries = await this.readDirectory(contextTypePath, { withFileTypes: true, recursive: true }) as Dirent[];
+    return entries.map(entry => ({
+      name: entry.name,
+      parentPath: contextTypePath,
+      isFile: () => entry.isFile()
+    }));
   }
   
 }
