@@ -191,7 +191,7 @@ To enable additional context types with validation and templates, manually creat
 
 ### Context Type Properties
 
-- **baseType**: One of four base types (see below)
+- **baseType**: One of six base types (see below)
 - **name**: Unique identifier for the context type
 - **description**: Human-readable description shown in list_contexts
 - **template**: Template name (without .md extension) for validation
@@ -199,13 +199,13 @@ To enable additional context types with validation and templates, manually creat
 
 ### Base Types
 
-#### templated-document
+#### templated-single-document
 - Single file per context type
 - Replaces content on update (archives previous)
 - Validates against template
 - Use for: mental models, feature lists, architecture docs
 
-#### freeform-document  
+#### freeform-single-document  
 - Single or multiple named files
 - No validation
 - User controls filenames
@@ -218,15 +218,13 @@ To enable additional context types with validation and templates, manually creat
 - Validates each entry against template
 - Use for: session logs, changelogs, append-only records
 
-#### log
+#### freeform-log
 - Like templated-log but without validation
 - Use for: informal logs, debug output
 
-### File Naming Strategies
+#### templated-document-collection
 
-- **single**: One file named `{context_type}.md`
-- **timestamped**: Files named `{context_type}-{timestamp}.md`
-- **named**: User specifies filename in MCP Tool call
+#### freeform-document-collection
 
 ## Creating Templates
 
