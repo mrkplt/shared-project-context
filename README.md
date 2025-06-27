@@ -89,8 +89,6 @@ await executeTool('get_context', {
 });
 ```
 
-**Note**: For context types with `"fileNaming": "named"` (like freeform-document), you must always specify a `context_name`. Reading all files at once is not currently supported.
-
 #### update_context
 
 Update or create context with validation.
@@ -152,7 +150,6 @@ New projects start with a minimal default configuration:
       "baseType": "freeform-document",
       "name": "general",
       "description": "Arbitrary named files for reference documents.",
-      "fileNaming": "named",
       "validation": false
     }
   ]
@@ -173,7 +170,6 @@ To enable additional context types with validation and templates, manually creat
       "name": "session_summary",
       "description": "Chronological development log",
       "template": "session_summary",
-      "fileNaming": "timestamped",
       "validation": true
     },
     {
@@ -181,14 +177,12 @@ To enable additional context types with validation and templates, manually creat
       "name": "mental_model",
       "description": "Technical architecture understanding",
       "template": "mental_model",
-      "fileNaming": "single",
       "validation": true
     },
     {
       "baseType": "freeform-document",
       "name": "notes",
       "description": "Unstructured notes and references",
-      "fileNaming": "named",
       "validation": false
     }
   ]
@@ -201,7 +195,6 @@ To enable additional context types with validation and templates, manually creat
 - **name**: Unique identifier for the context type
 - **description**: Human-readable description shown in list_contexts
 - **template**: Template name (without .md extension) for validation
-- **fileNaming**: How files are named - `single`, `timestamped`, or `named`
 - **validation**: Whether to validate against template
 
 ### Base Types
@@ -327,7 +320,6 @@ Manually edit the `project-config.json` file in your project directory to add yo
       "name": "my_context",
       "description": "My custom context for X purpose",  
       "template": "my-template",
-      "fileNaming": "single",
       "validation": true
     }
   ]
@@ -420,7 +412,6 @@ npm run dev       # Development mode with watch
       "name": "session_summary",
       "description": "Development session chronological log",
       "template": "session_summary",
-      "fileNaming": "timestamped",
       "validation": true
     },
     {
@@ -428,7 +419,6 @@ npm run dev       # Development mode with watch
       "name": "mental_model",
       "description": "Current understanding of system architecture",
       "template": "mental_model",
-      "fileNaming": "single",
       "validation": true
     },
     {
@@ -436,14 +426,12 @@ npm run dev       # Development mode with watch
       "name": "features",
       "description": "Feature implementation tracking",
       "template": "features",
-      "fileNaming": "single",
       "validation": true
     },
     {
       "baseType": "freeform-document",
       "name": "docs",
       "description": "Project documentation",
-      "fileNaming": "named",
       "validation": false
     }
   ]
@@ -459,14 +447,12 @@ npm run dev       # Development mode with watch
       "baseType": "log",
       "name": "research_log",
       "description": "Daily research activities",
-      "fileNaming": "timestamped",
       "validation": false
     },
     {
       "baseType": "freeform-document",
       "name": "papers",
       "description": "Paper summaries and notes",
-      "fileNaming": "named",
       "validation": false
     },
     {
@@ -474,7 +460,6 @@ npm run dev       # Development mode with watch
       "name": "hypotheses",
       "description": "Current research hypotheses",
       "template": "hypotheses",
-      "fileNaming": "single",
       "validation": true
     }
   ]
