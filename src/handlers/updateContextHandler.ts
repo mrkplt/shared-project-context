@@ -1,6 +1,6 @@
-import { FileSystemHelper } from '../models/context_types/utilities/fileSystem';
-import  ContextTypeFactory from '../models/contexTypeFactory';
-import { ContentItem, ValidationError } from '../types';
+import { FileSystemHelper } from '../models/context_types/utilities/fileSystem.js';
+import  ContextTypeFactory from '../models/contexTypeFactory.js';
+import { ContentItem, ValidationError } from '../types.js';
 
 interface UpdateContextArgs {
   projectName: string;

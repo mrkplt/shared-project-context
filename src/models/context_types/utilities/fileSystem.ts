@@ -501,7 +501,7 @@ export class FileSystemHelper implements PersistenceHelper {
           {
             "baseType": "freeform-document-collection",
             "name": "general",
-            "description": "A collection of arbitrary named contexts with no required template. Each document is stored separately and can be retrieved individually. Use get_context(\"other\", \"filename\") to read and update_context(\"other\", content, \"filename\") to create or update files.",
+            "description": "A collection of arbitrary named contexts with no required template. Each document is stored separately and can be retrieved individually. Use get_context(\"general\", \"filename\") to read and update_context(\"general\", \"filename\", content) to create or update files.",
             "validation": false
           }
         ]

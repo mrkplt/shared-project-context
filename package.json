@@ -1,6 +1,6 @@
 {
   "name": "shared-project-context",
-  "version": "0.6-pre",
+  "version": "0.7.0-pre",
   "description": "MCP Server for managing AI agent context with validation and correction guidance",
   "type": "module",
   "main": "dist/index.js",
@@ -12,15 +12,15 @@
   ],
   "scripts": {
     "clean": "rm -rf dist",
-    "build": "tsc",
+    "build": "tsc && chmod +x dist/server.js",
     "start": "node dist/server.js",
     "dev": "tsx watch --clear-screen=false src/server.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "lint": "eslint 'src/**/*.ts'",
-    "remove-server": "npm uninstall -g shared-project-context",
-    "install-server": "npm run build && npm run remove-server && npm pack && npm install -g shared-project-context-*-pre.tgz && chmod +x \"$(npm root -g)/shared-project-context/dist/server.js\" && rm shared-project-context-*-pre.tgz"
+    "remove-server": "yarn global remove shared-project-context || true",
+    "pack-server": "yarn build && yarn pack --filename shared-project-context.tgz",
+    "install-server": "yarn build && yarn pack --filename shared-project-context.tgz && yarn global add $(realpath shared-project-context.tgz)"
   },
   "keywords": [
     "mcp",

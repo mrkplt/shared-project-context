@@ -1,5 +1,5 @@
-import { ContentItem } from '../types';
-import { FileSystemHelper } from '../models/context_types/utilities/fileSystem';
+import { ContentItem } from '../types.js';
+import { FileSystemHelper } from '../models/context_types/utilities/fileSystem.js';
 
 class CreateProjectHandler {
   private persistenceHelper: FileSystemHelper;
