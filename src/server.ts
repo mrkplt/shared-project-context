@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-
+console.error('Starting shared-project-context server...');
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
@@ -38,7 +38,7 @@ class ContextManagerServer {
     this.clearContextHandler = new ClearContextHandler(this.persistenceHelper);
     this.getProjectTemplatesHandler = new GetProjectTemplatesHandler(this.persistenceHelper);
     
-    // TODO: indicate that further instruction about how to use the contexts is available somehwere and make it dynamic
+    console.error('Starting shared-project-context serverererer...');
     this.server = new Server(
       {
         name: 'shared-project-context',
@@ -213,6 +213,7 @@ Before updating any context, call the project templates tool to get the required
   }
   
   public async start(): Promise<void> {
+    console.error('Starting shared-project-context server.........');
     try {
       const transport = new StdioServerTransport();
       
@@ -227,7 +228,7 @@ Before updating any context, call the project templates tool to get the required
       // Set up signal handlers
       process.on('SIGINT', () => shutdown('SIGINT'));
       process.on('SIGTERM', () => shutdown('SIGTERM'));
-      
+
       // Handle uncaught exceptions
       process.on('uncaughtException', (error) => {
         console.error('Uncaught exception:', error);
@@ -255,13 +256,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Check if this module is the main module
-if (import.meta.url === `file://${process.argv[1]}`) {
-  const server = new ContextManagerServer();
-  server.start().catch(error => {
-    console.error('Failed to start server:', error);
-    process.exit(1);
-  });
-}
+console.error('Starting shared-project-context server......');
+const server = new ContextManagerServer();
+server.start().catch(error => {
+  console.error('Failed to start server:', error);
+  process.exit(1);
+});
 
 // Export the server for testing and programmatic usage
 export { ContextManagerServer };
+

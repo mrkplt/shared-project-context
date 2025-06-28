@@ -12,15 +12,15 @@
   ],
   "scripts": {
     "clean": "rm -rf dist",
-    "build": "tsc && chmod +x dist/server.js",
+    "build": "tsc --build --force && chmod +x dist/server.js",
     "start": "node dist/server.js",
     "dev": "tsx watch --clear-screen=false src/server.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "remove-server": "yarn global remove shared-project-context || true",
+    "remove-server": "(npm uninstall -g shared-project-context || true) && (yarn global remove shared-project-context || true)",
     "pack-server": "yarn build && yarn pack --filename shared-project-context.tgz",
-    "install-server": "yarn build && yarn pack --filename shared-project-context.tgz && yarn global add $(realpath shared-project-context.tgz)"
+    "install-server": "yarn build && yarn pack --filename shared-project-context.tgz && npm install -g $(realpath shared-project-context.tgz) && rm shared-project-context.tgz"
   },
   "keywords": [
     "mcp",
