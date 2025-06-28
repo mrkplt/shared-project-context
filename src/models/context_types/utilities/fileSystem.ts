@@ -12,7 +12,7 @@ export class FileSystemHelper implements PersistenceHelper {
   private configCache: Map<string, ProjectConfig> = new Map();
   
   constructor(
-    contextRoot: string = path.join(os.homedir(), '.shared-project-context')
+    contextRoot: string = process.env.CONTEXT_ROOT || path.join(os.homedir(), '.shared-project-context')
   ) {
     this.contextRoot = contextRoot;
   }
