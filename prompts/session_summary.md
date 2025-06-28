@@ -1,0 +1,1 @@
+look at the git repo in ~/src/shared-project-context. Look at all of the changes since the v0.6-pre tag. Read the session_summary context for cxms. Craft an update for the session_summary context.

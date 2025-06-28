@@ -1,0 +1,1 @@
+I am developing a plugin called betashared-project-context. You have access to it. I would like you to read the description and proceed through it's prescribed workflow in order to test it. Create a new project when testing
