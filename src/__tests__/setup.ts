@@ -1,3 +1,5 @@
+import { jest } from '@jest/globals';
+
 // Mock the MCP SDK
 jest.mock('@modelcontextprotocol/sdk/server/index.js', () => ({
   Server: jest.fn().mockImplementation(() => ({

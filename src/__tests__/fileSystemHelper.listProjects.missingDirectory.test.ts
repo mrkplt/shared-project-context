@@ -1,7 +1,8 @@
+import { jest, describe, test, expect } from '@jest/globals';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
-import { FileSystemHelper } from '../models/context_types/utilities/fileSystem';
+import { FileSystemHelper } from '../models/context_types/utilities/fileSystem.js';
 
 // Override the mocked fs for this test since we need real filesystem operations
 jest.unmock('fs');

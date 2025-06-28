@@ -1,4 +1,5 @@
 import { FileSystemHelper } from '../models/context_types/utilities/fileSystem.js';
+import { jest, describe, beforeEach, test, expect } from '@jest/globals';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
@@ -398,7 +399,7 @@ describe('FileSystemHelper.getProjectConfig', () => {
         contextTypes: [{
           baseType: "freeform-document-collection",
           name: "general",
-          description: "A collection of arbitrary named contexts with no required template. Each document is stored separately and can be retrieved individually. Use get_context(\"other\", \"filename\") to read and update_context(\"other\", content, \"filename\") to create or update files.",
+          description: "Arbitrary named contexts with no template requirements. Each document stored separately and requires a filename.",
           validation: false
         }]
       });

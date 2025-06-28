@@ -1,6 +1,7 @@
 import { Dirent } from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
 import fs from 'fs/promises';
 import { PersistenceHelper, ProjectConfig, TypeConfig } from '../../../types.js';
 import { PersistenceResponse } from '../../../types.js';
@@ -194,8 +195,11 @@ export class FileSystemHelper implements PersistenceHelper {
       } catch (projectError) {
         // Project template doesn't exist, initialize it from repository default
         try {
-          const repositoryRoot = path.resolve(process.cwd());
-          const defaultTemplatePath = path.join(repositoryRoot, 'templates', `${templateName}.md`);
+        // Get the root directory of the package using import.meta.url for ES modules
+        const currentFileUrl = new URL(import.meta.url);
+        const currentDir = path.dirname(fileURLToPath(currentFileUrl));
+        const packageRoot = path.resolve(currentDir, '../../../../');
+        const defaultTemplatePath = path.join(packageRoot, 'templates', `${templateName}.md`);
           
           // Read the repository default template
           const defaultTemplateContent = await fs.readFile(defaultTemplatePath, 'utf-8');
@@ -497,15 +501,15 @@ export class FileSystemHelper implements PersistenceHelper {
 
   private getDefaultConfig(): ProjectConfig {
     return {
-        "contextTypes": [
-          {
-            "baseType": "freeform-document-collection",
-            "name": "general",
-            "description": "A collection of arbitrary named contexts with no required template. Each document is stored separately and can be retrieved individually. Use get_context(\"general\", \"filename\") to read and update_context(\"general\", \"filename\", content) to create or update files.",
-            "validation": false
-          }
-        ]
-    };
+      "contextTypes": [
+        {
+          "baseType": "freeform-document-collection",
+          "name": "general",
+          "description": "Arbitrary named contexts with no template requirements. Each document stored separately and requires a filename.",
+          "validation": false
+        }
+      ]
+    }
   }
 
   private async listPathsForType(projectName: string, contextType: string): Promise<{ name: string; parentPath: string; isFile: () => boolean }[]> {

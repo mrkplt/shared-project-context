@@ -42,6 +42,9 @@ class GetProjectTemplatesHandler {
             content: [{
               type: 'text',
               text: `Something has gone wrong. Failed to retrieve template for ${contextType}.`
+            },{
+              type: 'text',
+              text: result.errors?.join(', ') || 'Unknown error'
             }]
           };
         }

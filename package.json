@@ -15,9 +15,10 @@
     "build": "tsc --build --force && chmod +x dist/server.js",
     "start": "node dist/server.js",
     "dev": "tsx watch --clear-screen=false src/server.ts",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest",
+    "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch",
+    "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
+    "tag-and-release": "git tag v$(node -e 'console.log(require(\"./package.json\").version)') && git push origin tag v$(node -e 'console.log(require(\"./package.json\").version)')",
     "remove-server": "(npm uninstall -g shared-project-context || true) && (yarn global remove shared-project-context || true)",
     "pack-server": "yarn build && yarn pack --filename shared-project-context.tgz",
     "install-server": "yarn build && yarn pack --filename shared-project-context.tgz && npm install -g $(realpath shared-project-context.tgz) && rm shared-project-context.tgz"

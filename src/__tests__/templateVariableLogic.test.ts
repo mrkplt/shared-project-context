@@ -1,3 +1,5 @@
+import { jest, describe, test, expect } from '@jest/globals';
+
 /**
  * Tests for template variable normalization logic
  * This tests the core functionality without dependencies on markdown parsing libraries

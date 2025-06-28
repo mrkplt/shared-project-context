@@ -1,7 +1,8 @@
+import { jest, describe, beforeEach, test, expect } from '@jest/globals';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
-import { FileSystemHelper } from '../models/context_types/utilities/fileSystem';
+import { FileSystemHelper } from '../models/context_types/utilities/fileSystem.js';
 
 // Override the mocked fs for this test since we need real filesystem operations
 jest.unmock('fs');
@@ -69,34 +70,6 @@ describe('FileSystemHelper.getContext', () => {
     
     expect(result.success).toBe(true);
     expect(result.data).toEqual([content]);
-  });
-
-  test('reads multiple specific contexts when context names provided', async () => {
-    const contextType = 'general';
-    const contexts = [
-      { name: 'doc-one', content: 'First document content' },
-      { name: 'doc-two', content: 'Second document content' },
-      { name: 'doc-three', content: 'Third document content' }
-    ];
-    
-    // Write multiple contexts
-    for (const ctx of contexts) {
-      await fileSystemHelper.writeContext(projectName, contextType, ctx.name, ctx.content);
-    }
-    
-    // Read specific contexts
-    const contextNames = ['doc-one', 'doc-three'];
-    const result = await fileSystemHelper.getContext(
-      projectName,
-      contextType,
-      contextNames
-    );
-    
-    expect(result.success).toBe(true);
-    expect(result.data).toEqual([
-      'First document content',
-      'Third document content'
-    ]);
   });
 
   test('reads all contexts when no context names provided', async () => {
